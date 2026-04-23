@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Crossdyne.Security.Windows</PackageId>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Version>0.2.0-beta.1</Version>
+    <Description>Windows-specific security features for Crossdyne.Security. Provides integration with Windows Credential Manager, DPAPI (Data Protection API), Windows Hello, and other platform-specific security mechanisms.</Description>
+    <PackageTags>security;windows;dpapi;credential-manager;windows-hello;platform-specific;windows-authentication;native</PackageTags>
+    
+    <RootNamespace>Crossdyne.Security.Windows</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crossdyne.Security.Abstractions\Crossdyne.Security.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="10.0.2" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.2" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Crossdyne.Security.Windows</RootNamespace>
+    <AssemblyName>Crossdyne.Security.Windows</AssemblyName>
+  </PropertyGroup>
+
+</Project>

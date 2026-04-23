@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Crossdyne.Security.Abstractions/Crossdyne.Security.Abstractions.csproj" Id="5def9cd6-db6b-4dc4-9e34-7398795fff35" />
+    <Project Path="src/Crossdyne.Security.Configuration/Crossdyne.Security.Configuration.csproj" />
+    <Project Path="src/Crossdyne.Security.Cryptography/Crossdyne.Security.Cryptography.csproj" Id="f39b3854-241b-4324-ab23-38352d7225fa" />
+    <Project Path="src/Crossdyne.Security.Exceptions/Crossdyne.Security.Exceptions.csproj" />
+    <Project Path="src/Crossdyne.Security.Srp.Client/Crossdyne.Security.Srp.Client.csproj" Id="ca8f7281-261b-4d5d-8193-cc639ff0d1bb" />
+    <Project Path="src/Crossdyne.Security.Srp.Server/Crossdyne.Security.Srp.Server.csproj" Id="48b299df-e411-43c4-ad10-f19f088af6d7" />
+    <Project Path="src/Crossdyne.Security.Utilities/Crossdyne.Security.Utilities.csproj" Id="6d7300c9-8e21-48b2-b86a-fdba668fb6e7" />
+    <Project Path="src/Crossdyne.Security.Windows/Crossdyne.Security.Windows.csproj" Id="0c826c62-d107-4e6c-9aee-bffb7b7c6625" />
+    <Project Path="src/Crossdyne.Security/Crossdyne.Security.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Crossdyne.Security.Benchmarks/Crossdyne.Security.Benchmarks.csproj" Id="6b8eabae-d82d-4b7c-99a8-2ab68b8324e4" />
+    <Project Path="tests/Crossdyne.Security.Tests/Crossdyne.Security.Tests.csproj" Id="1465511b-0b2d-49c9-a095-c06cd7ddf434" />
+  </Folder>
+</Solution>
