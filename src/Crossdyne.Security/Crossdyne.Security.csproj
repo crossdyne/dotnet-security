@@ -1,0 +1,33 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Crossdyne.Security</PackageId>
+    <Version>0.2.0-beta.1</Version>
+    <Description>Meta-package for Crossdyne.Security libraries. Installs all security components with a single reference.</Description>
+    <PackageTags>security;srp;cryptography;authentication;meta-package</PackageTags>
+    
+    <RootNamespace>Crossdyne.Security</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crossdyne.Security.Abstractions\Crossdyne.Security.Abstractions.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Configuration\Crossdyne.Security.Configuration.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Cryptography\Crossdyne.Security.Cryptography.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Exceptions\Crossdyne.Security.Exceptions.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Srp.Client\Crossdyne.Security.Srp.Client.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Srp.Server\Crossdyne.Security.Srp.Server.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Utilities\Crossdyne.Security.Utilities.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Windows\Crossdyne.Security.Windows.csproj" 
+                      Condition="'$(TargetFramework)' == 'net10.0-windows'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Crossdyne.Security</RootNamespace>
+    <AssemblyName>Crossdyne.Security</AssemblyName>
+  </PropertyGroup>
+
+</Project>
