@@ -14,25 +14,25 @@ namespace Crossdyne.Security.Cryptography
         /// <summary>
         /// Derives keys from password using default options.
         /// </summary>
-        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt) => DeriveKeysFromPassword(login, password, salt, pbkdf2Iterations: null);
+        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt) => DeriveKeysFromPassword(identity, password, salt, pbkdf2Iterations: null);
 
         /// <summary>
         /// Derives keys from password with custom iterations.
         /// </summary>
-        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, int? pbkdf2Iterations = null)
+        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, int? pbkdf2Iterations = null)
         {
             var options = new KdfOptions();
 
             if (pbkdf2Iterations.HasValue)
                 options.Pbkdf2Iterations = pbkdf2Iterations.Value;
 
-            return DeriveKeysFromPassword(login, password, salt, options);
+            return DeriveKeysFromPassword(identity, password, salt, options);
         }
 
         /// <summary>
         /// Derives keys from password with full configuration.
         /// </summary>
-        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, KdfOptions? options = null)
+        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, KdfOptions? options = null)
         {
             if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentException("Password cannot be null or empty.", nameof(password));
@@ -43,8 +43,8 @@ namespace Crossdyne.Security.Cryptography
             var opts = options ?? KdfOptions.Default;
             opts.Validate();
             
-            string normalizedLogin = login.Trim().ToLowerInvariant();
-            string combinedPassword = $"{normalizedLogin}:{password}";
+            string normalizedIdentity = identity.Trim().ToLowerInvariant();
+            string combinedPassword = $"{normalizedIdentity}:{password}";
             byte[] masterKey = [];
 
             try
