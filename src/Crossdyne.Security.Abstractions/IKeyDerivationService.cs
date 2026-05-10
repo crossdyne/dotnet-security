@@ -34,6 +34,6 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="salt">The salt value for key derivation.</param>
         /// <param name="options">Optional crypto configuration options.</param>
         /// <returns>A tuple containing the Key Encryption Key (KEK) and authentication hash.</returns>
-        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, CryptoOptions? options = null);
+        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, KdfOptions? options = null);
     }
 }

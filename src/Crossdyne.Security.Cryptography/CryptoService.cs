@@ -1,5 +1,4 @@
 using System.Security.Cryptography;
-using System.Text;
 using System.Text.Json;
 using Crossdyne.Security.Abstractions;
 using Crossdyne.Security.Configuration;
@@ -17,33 +16,21 @@ namespace Crossdyne.Security.Cryptography
         /// <summary>
         /// Encrypts data using default security options.
         /// </summary>
-        public string EncryptedData<T>(T data, byte[] key) => EncryptedData(data, key, CryptoOptions.Default);
-        
-        /// <summary>
-        /// Encrypts data with custom PBKDF2 iterations (quick customization).
-        /// </summary>
-        public string EncryptedData<T>(T data, byte[] key, int? pbkdf2Iterations = null)
-        {
-            var options = new CryptoOptions();
+        public string EncryptedData<T>(T data, byte[] key) => EncryptedData(data, key, AesGcmOptions.Default);
 
-            if (pbkdf2Iterations.HasValue)
-                options.Pbkdf2Iterations = pbkdf2Iterations.Value;
-
-            return EncryptedData(data, key, options);
-        }
-        
         /// <summary>
         /// Encrypts data with full configuration options.
         /// </summary>
-        public string EncryptedData<T>(T data, byte[] key, CryptoOptions? options = null)
+        public string EncryptedData<T>(T data, byte[] key, AesGcmOptions? options = null)
         {
             ArgumentNullException.ThrowIfNull(key);
 
             if (key.Length != SecurityConstants.KeySizeBytes)
                 throw new InvalidKeyException($"Key must be {SecurityConstants.KeySizeBytes} bytes for AES-256.");
 
-            var opts = options ?? CryptoOptions.Default;
+            var opts = options ?? AesGcmOptions.Default;
             opts.Validate();
+
 
             byte[] plainBytes = JsonSerializer.SerializeToUtf8Bytes(data);
 
@@ -84,12 +71,12 @@ namespace Crossdyne.Security.Cryptography
         /// <summary>
         /// Decrypts data using default options.
         /// </summary>
-        public T? DecryptData<T>(string encryptedBase64, byte[] key) => DecryptData<T>(encryptedBase64, key, CryptoOptions.Default);
+        public T? DecryptData<T>(string encryptedBase64, byte[] key) => DecryptData<T>(encryptedBase64, key, AesGcmOptions.Default);
 
         /// <summary>
         /// Decrypts data with configuration options.
         /// </summary>
-        public T? DecryptData<T>(string encryptedBase64, byte[] key, CryptoOptions? options = null)
+        public T? DecryptData<T>(string encryptedBase64, byte[] key, AesGcmOptions? options = null)
         {
             if (string.IsNullOrEmpty(encryptedBase64)) 
                 throw new ArgumentException("Encrypted data cannot be null or empty.", nameof(encryptedBase64));
@@ -100,7 +87,7 @@ namespace Crossdyne.Security.Cryptography
             if (key.Length != SecurityConstants.KeySizeBytes)
                 throw new InvalidKeyException($"Key must be {SecurityConstants.KeySizeBytes} bytes for AES-256.");
 
-            var opts = options ?? CryptoOptions.Default;
+            var opts = options ?? AesGcmOptions.Default;
 
             byte[] encryptedBytes;
 
@@ -123,7 +110,7 @@ namespace Crossdyne.Security.Cryptography
         /// Decrypts data format version 0 (Legacy/Current).
         /// Format: [Nonce][Ciphertext][Tag]
         /// </summary>
-        private T? DecryptDataV0<T>(byte[] encryptedBytes, byte[] key, CryptoOptions options)
+        private T? DecryptDataV0<T>(byte[] encryptedBytes, byte[] key, AesGcmOptions options)
         {          
             var offset = 0;
             var nonce = encryptedBytes.AsSpan(offset, options.NonceSize);
@@ -133,7 +120,7 @@ namespace Crossdyne.Security.Cryptography
             return DecryptCore<T>(nonce, cipherText, tag, key, options);
         }
 
-        private T? DecryptCore<T>(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> cipherText, ReadOnlySpan<byte> tag, byte[] key, CryptoOptions opts)
+        private T? DecryptCore<T>(ReadOnlySpan<byte> nonce, ReadOnlySpan<byte> cipherText, ReadOnlySpan<byte> tag, byte[] key, AesGcmOptions opts)
         {
             var plainBytes = new byte[cipherText.Length];
 

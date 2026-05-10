@@ -17,16 +17,6 @@ namespace Crossdyne.Security.Abstractions
         string EncryptedData<T>(T data, byte[] key);
 
         /// <summary>
-        /// Encrypts data using the provided key with specified PBKDF2 iterations.
-        /// </summary>
-        /// <typeparam name="T">The type of data to encrypt.</typeparam>
-        /// <param name="data">The data to encrypt.</param>
-        /// <param name="key">The encryption key.</param>
-        /// <param name="pbkdf2Iterations">The number of PBKDF2 iterations. If null, uses default value.</param>
-        /// <returns>Base64-encoded encrypted data.</returns>
-        public string EncryptedData<T>(T data, byte[] key, int? pbkdf2Iterations = null);
-
-        /// <summary>
         /// Encrypts data using the provided key with custom crypto options.
         /// </summary>
         /// <typeparam name="T">The type of data to encrypt.</typeparam>
@@ -34,7 +24,7 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="key">The encryption key.</param>
         /// <param name="options">Optional crypto configuration options.</param>
         /// <returns>Base64-encoded encrypted data.</returns>
-        public string EncryptedData<T>(T data, byte[] key, CryptoOptions? options = null);
+        public string EncryptedData<T>(T data, byte[] key, AesGcmOptions? options = null);
 
         /// <summary>
         /// Decrypts data using the provided key with default options.
@@ -53,7 +43,7 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="key">The decryption key.</param>
         /// <param name="options">Optional crypto configuration options.</param>
         /// <returns>The decrypted data, or default if decryption fails.</returns>
-        T? DecryptData<T>(string encryptedBase64, byte[] key, CryptoOptions? options = null);
+        T? DecryptData<T>(string encryptedBase64, byte[] key, AesGcmOptions? options = null);
 
         /// <summary>
         /// Generates cryptographically secure random bytes.

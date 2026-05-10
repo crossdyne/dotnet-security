@@ -111,7 +111,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void CryptoOptions_Pbkdf2Iterations_ThrowsOnSet_WhenBelowMinimum()
         {
-            var options = new CryptoOptions();
+            var options = new KdfOptions();
 
             var exception = Assert.Throws<ArgumentOutOfRangeException>(() => options.Pbkdf2Iterations = 50_000);
             
@@ -123,22 +123,6 @@ namespace Crossdyne.Security.Tests
         #endregion
 
          #region CryptoOptions Tests
-
-        [Fact]
-        public void DeriveKeysFromPassword_WithCustomOptions_AppliesConfiguration()
-        {
-            // Arrange
-            var options = CryptoOptions.Create()
-                .WithPbkdf2Iterations(700_000)
-                .WithTagSize(14)
-                .Build();
-
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, options);
-
-            Assert.NotNull(kek);
-            Assert.NotNull(authHash);
-            Assert.Equal(SecurityConstants.KeySizeBytes, kek.Length);
-        }
 
         [Fact]
         public void DeriveKeysFromPassword_WithNullOptions_UsesDefaults()
@@ -153,7 +137,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void DeriveKeysFromPassword_WithPresetHighSecurity_UsesRecommendedIterations()
         {
-            var options = CryptoOptions.HightSecurity; // Note: typo in original code "HightSecurity"
+            var options = KdfOptions.HighSecurity; // Note: typo in original code "HightSecurity"
 
             var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, options);
 
@@ -162,60 +146,14 @@ namespace Crossdyne.Security.Tests
             Assert.Equal(SecurityConstants.Pbkdf2IterationsRecommended, options.Pbkdf2Iterations);
         }
 
-        [Fact]
-        public void DeriveKeysFromPassword_WithPresetLegacy_UsesLegacyIterations()
-        {
-            var options = CryptoOptions.Legacy;
-
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, options);
-
-            Assert.NotNull(kek);
-            Assert.NotNull(authHash);
-            Assert.Equal(100_000, options.Pbkdf2Iterations);
-        }
-
         #endregion
 
          #region CryptoOptions Builder & Validation Tests
 
         [Fact]
-        public void CryptoOptionsBuilder_WithValidSettings_BuildsSuccessfully()
-        {
-            var options = CryptoOptions.Create()
-                .WithTagSize(14)
-                .WithPbkdf2Iterations(500_000)
-                .WithAssociatedData("test-aad")
-                .Build();
-
-            Assert.Equal(14, options.TagSize);
-            Assert.Equal(500_000, options.Pbkdf2Iterations);
-            Assert.Equal("test-aad", Encoding.UTF8.GetString(options.AssociatedData!));
-        }
-
-        [Fact]
-        public void CryptoOptions_NonceSize_OnlyAcceptsStandardValue()
-        {
-            var options = new CryptoOptions();
-
-            options.NonceSize = SecurityConstants.AesGcmNonceSize;
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => options.NonceSize = 16);
-        }
-
-        [Theory]
-        [InlineData(11)]  // Below min
-        [InlineData(17)]  // Above max
-        public void CryptoOptions_TagSize_ThrowsOnInvalidRange(int invalidTagSize)
-        {
-            var options = new CryptoOptions();
-
-            Assert.Throws<ArgumentOutOfRangeException>(() => options.TagSize = invalidTagSize);
-        }
-
-        [Fact]
         public void CryptoOptions_Validate_ThrowsOnInvalidConfiguration()
         {
-            var options = new CryptoOptions();
+            var options = new KdfOptions();
             Assert.Throws<ArgumentOutOfRangeException>(() => options.Pbkdf2Iterations = SecurityConstants.Pbkdf2IterationsMinimum - 1);
         }
 

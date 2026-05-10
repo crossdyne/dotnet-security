@@ -21,7 +21,7 @@ namespace Crossdyne.Security.Cryptography
         /// </summary>
         public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, int? pbkdf2Iterations = null)
         {
-            var options = new CryptoOptions();
+            var options = new KdfOptions();
 
             if (pbkdf2Iterations.HasValue)
                 options.Pbkdf2Iterations = pbkdf2Iterations.Value;
@@ -32,7 +32,7 @@ namespace Crossdyne.Security.Cryptography
         /// <summary>
         /// Derives keys from password with full configuration.
         /// </summary>
-        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, CryptoOptions? options = null)
+        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, KdfOptions? options = null)
         {
             if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentException("Password cannot be null or empty.", nameof(password));
@@ -40,7 +40,7 @@ namespace Crossdyne.Security.Cryptography
             if (salt == null)
                 throw new InvalidKeyException($"Salt must be not null.");
                 
-            var opts = options ?? CryptoOptions.Default;
+            var opts = options ?? KdfOptions.Default;
             opts.Validate();
             
             string normalizedLogin = login.Trim().ToLowerInvariant();
