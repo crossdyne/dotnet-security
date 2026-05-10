@@ -45,8 +45,7 @@ namespace Crossdyne.Security.Cryptography
             var opts = options ?? CryptoOptions.Default;
             opts.Validate();
 
-            string jsonString = JsonSerializer.Serialize(data);
-            byte[] plainBytes = Encoding.UTF8.GetBytes(jsonString);
+            byte[] plainBytes = JsonSerializer.SerializeToUtf8Bytes(data);
 
             var nonce = new byte[opts.NonceSize];
             RandomNumberGenerator.Fill(nonce);
@@ -114,7 +113,7 @@ namespace Crossdyne.Security.Cryptography
                 throw new ArgumentException("Invalid Base64 format.", nameof(encryptedBase64), ex);
             }
 
-            if (encryptedBytes.Length < opts.NonceSize + opts.NonceSize)
+            if (encryptedBytes.Length < opts.NonceSize + opts.TagSize)
                 throw new DecryptionException($"Encrypted data is too short. Expected at least {SecurityConstants.AesGcmNonceSize + SecurityConstants.AesGcmTagSize} bytes, but got {encryptedBytes.Length}");
 
             return DecryptDataV0<T>(encryptedBytes, key, opts);
@@ -143,9 +142,7 @@ namespace Crossdyne.Security.Cryptography
                 using var aes = new AesGcm(key, opts.TagSize);
                 aes.Decrypt(nonce, cipherText, tag, plainBytes, opts.AssociatedData ?? ReadOnlySpan<byte>.Empty);
 
-                string jsonString = Encoding.UTF8.GetString(plainBytes);
-
-                return JsonSerializer.Deserialize<T>(jsonString);
+                return JsonSerializer.Deserialize<T>(plainBytes);
             }
             catch (CryptographicException ex)
             {
