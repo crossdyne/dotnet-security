@@ -62,9 +62,6 @@ namespace Crossdyne.Security.Configuration
 
         /// <summary>Default PBKDF2 iterations (balanced security/performance as of 2024).</summary>
         public const int Pbkdf2IterationsDefault = 600_000;
-
-        /// <summary>Recommended PBKDF2 iterations for high-security scenarios.</summary>
-        public const int Pbkdf2IterationsRecommended = 1_000_000;
         
         /// <summary>Minimum safe PBKDF2 iterations. Values below this are rejected.</summary>
         public const int Pbkdf2IterationsMinimum = 100_000;

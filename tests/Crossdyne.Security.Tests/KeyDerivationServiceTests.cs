@@ -134,18 +134,6 @@ namespace Crossdyne.Security.Tests
             Assert.Equal(hash1, hash2);
         }
 
-        [Fact]
-        public void DeriveKeysFromPassword_WithPresetHighSecurity_UsesRecommendedIterations()
-        {
-            var options = KdfOptions.HighSecurity; // Note: typo in original code "HightSecurity"
-
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, options);
-
-            Assert.NotNull(kek);
-            Assert.NotNull(authHash);
-            Assert.Equal(SecurityConstants.Pbkdf2IterationsRecommended, options.Pbkdf2Iterations);
-        }
-
         #endregion
 
          #region CryptoOptions Builder & Validation Tests

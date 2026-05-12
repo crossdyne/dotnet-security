@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Crossdyne.Security.Exceptions;
 
 namespace Crossdyne.Security.Configuration
@@ -40,6 +41,27 @@ namespace Crossdyne.Security.Configuration
             }
         }
 
+        private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public HashAlgorithmName HashAlgorithm
+        {
+            get => _hashAlgorithm;
+            set
+            {
+                if (value != HashAlgorithmName.SHA256 &&
+                    value != HashAlgorithmName.SHA384 &&
+                    value != HashAlgorithmName.SHA512)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), $"Unsupported hash algorithm: {value.Name}");
+                }
+                
+                _hashAlgorithm = value;
+            }
+        }
+
         /// <summary>
         /// Validates the current configuration.
         /// </summary>
@@ -70,23 +92,6 @@ namespace Crossdyne.Security.Configuration
         /// need to be balanced.
         /// </remarks>
         public static KdfOptions Default => new();
-
-        /// <summary>
-        /// Gets a high-security preset with increased PBKDF2 iterations.
-        /// </summary>
-        /// <value>
-        /// A new instance of <see cref="KdfOptions"/> configured with 
-        /// <see cref="SecurityConstants.Pbkdf2IterationsRecommended"/>.
-        /// </value>
-        /// <remarks>
-        /// Recommended for protecting highly sensitive data such as master keys 
-        /// or long-term credentials. Provides stronger resistance to offline attacks 
-        /// at the cost of increased derivation time.
-        /// </remarks>
-        public static KdfOptions HighSecurity => new()
-        {
-            Pbkdf2Iterations = SecurityConstants.Pbkdf2IterationsRecommended  
-        };
 
         // === Builder ===
 
@@ -119,20 +124,6 @@ namespace Crossdyne.Security.Configuration
             public KdfOptionsBuilder WithPbkdf2Iterations(int iterations)
             {
                 _options.Pbkdf2Iterations = iterations;
-                return this;
-            }
-
-            /// <summary>
-            /// Configures PBKDF2 with recommended high-security iteration count.
-            /// </summary>
-            /// <returns>The current builder instance for chaining.</returns>
-            /// <remarks>
-            /// Sets iterations to <see cref="SecurityConstants.Pbkdf2IterationsRecommended"/> 
-            /// for enhanced protection against brute-force and dictionary attacks.
-            /// </remarks>
-            public KdfOptionsBuilder WithHighSecurity()
-            {
-                _options.Pbkdf2Iterations = SecurityConstants.Pbkdf2IterationsRecommended;
                 return this;
             }
 
