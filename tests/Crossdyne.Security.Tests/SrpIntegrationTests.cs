@@ -1,8 +1,11 @@
+using System.Numerics;
 using System.Security.Cryptography;
+using Crossdyne.Security.Abstractions;
 using Crossdyne.Security.Configuration;
 using Crossdyne.Security.Cryptography;
 using Crossdyne.Security.Srp.Client;
 using Crossdyne.Security.Srp.Server;
+using Crossdyne.Security.Tests.Helpers;
 
 namespace Crossdyne.Security.Tests
 {
@@ -32,8 +35,9 @@ namespace Crossdyne.Security.Tests
         {
             // === PHASE 1: Registration ===
             // Client: Derive auth hash and generate verifier
+            var context = SrpHelper.GetSrpContext();
             var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash);
+            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
             var verifierBytes = Convert.FromBase64String(verifierBase64);
             
             // Server: Store verifier (simulated)
@@ -41,48 +45,49 @@ namespace Crossdyne.Security.Tests
 
             // === PHASE 2: Authentication Challenge ===
             // Server: Generate challenge
-            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier);
+            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
             var B_base64 = challenge.PublicKeyB;
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
             // === PHASE 3: Client Proof Generation ===
             // Client: Generate A, M1, S
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, B_base64);
+            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, B_base64, context);
 
             // === PHASE 4: Server Verification ===
             // Server: Verify M1 and generate M2
-            var M2 = _server.VerifySrpProof(challenge, A, M1);
+            var M2 = _server.VerifySrpProof(challenge, A, M1, context);
 
             // === PHASE 5: Client Server Authentication ===
             // Client: Verify M2
-            var serverAuthenticated = _client.VerifyServerM2(A, M1, S, M2);
+            var serverAuthenticated = _client.VerifyServerM2(A, M1, S, M2, context);
 
             // === ASSERTIONS ===
             Assert.True(serverAuthenticated, "Server authentication should succeed with valid credentials");
             
             // Session key S should be usable for further encryption
             var sessionKeyBytes = Convert.FromBase64String(S);
-            Assert.Equal(SecurityConstants.ModulusSize, sessionKeyBytes.Length);
+            Assert.Equal(context.ModulusSize, sessionKeyBytes.Length);
         }
 
         [Fact]
         public void FullSrpFlow_WrongPassword_AuthenticationFails()
         {
             // === Registration with correct password ===
+             var context = SrpHelper.GetSrpContext();
             var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash);
+            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
 
             // === Challenge ===
-            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier);
+            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
             // === Client attempts with WRONG password ===
             var wrongPassword = "WrongP@ssw0rd!";
             var exception = Record.Exception(() =>
             {
-                var (A, M1, _) = _client.GenerateSrpProof(TestLogin, wrongPassword, saltBase64, challenge.PublicKeyB);
-                _server.VerifySrpProof(challenge, A, M1); // Should throw
+                var (A, M1, _) = _client.GenerateSrpProof(TestLogin, wrongPassword, saltBase64, challenge.PublicKeyB, context);
+                _server.VerifySrpProof(challenge, A, M1, context); // Should throw
             });
 
             // === ASSERTION ===
@@ -94,12 +99,13 @@ namespace Crossdyne.Security.Tests
         public void FullSrpFlow_TamperedChallenge_AuthenticationFails()
         {
             // === Registration ===
+             var context = SrpHelper.GetSrpContext();
             var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash);
+            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
 
             // === Challenge ===
-            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier);
+            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
             // === Tamper with B (server's public value) ===
@@ -108,11 +114,11 @@ namespace Crossdyne.Security.Tests
             var tamperedB = Convert.ToBase64String(B_bytes);
 
             // === Client generates proof with tampered B ===
-            var (A, M1, _) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, tamperedB);
+            var (A, M1, _) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, tamperedB, context);
 
             // === Server tries to verify with original challenge ===
             var exception = Record.Exception(() =>
-                _server.VerifySrpProof(challenge, A, M1));
+                _server.VerifySrpProof(challenge, A, M1, context));
 
             // === ASSERTION ===
             Assert.IsType<Exceptions.SrpVerificationException>(exception);
@@ -122,8 +128,9 @@ namespace Crossdyne.Security.Tests
         public void FullSrpFlow_MultipleSequentialAuthentications_Succeeds()
         {
             // === Registration ===
+             var context = SrpHelper.GetSrpContext();
             var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash);
+            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
@@ -131,16 +138,16 @@ namespace Crossdyne.Security.Tests
             for (int i = 0; i < 5; i++)
             {
                 // Server challenge (new random B each time)
-                var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier);
+                var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
                 
                 // Client proof
-                var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB);
+                var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB, context);
                 
                 // Server verification
-                var M2 = _server.VerifySrpProof(challenge, A, M1);
+                var M2 = _server.VerifySrpProof(challenge, A, M1, context);
                 
                 // Client verifies server
-                var authenticated = _client.VerifyServerM2(A, M1, S, M2);
+                var authenticated = _client.VerifyServerM2(A, M1, S, M2, context);
                 
                 Assert.True(authenticated, $"Round {i + 1}: Server authentication should succeed");
             }
@@ -150,16 +157,17 @@ namespace Crossdyne.Security.Tests
         public void FullSrpFlow_SessionKeyUsableForEncryption()
         {
             // === Full SRP flow to get session key ===
+            var context = SrpHelper.GetSrpContext();
             var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash);
+            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
             
-            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier);
+            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
             
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB);
-            var M2 = _server.VerifySrpProof(challenge, A, M1);
-            var authenticated = _client.VerifyServerM2(A, M1, S, M2);
+            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB, context);
+            var M2 = _server.VerifySrpProof(challenge, A, M1, context);
+            var authenticated = _client.VerifyServerM2(A, M1, S, M2, context);
             
             Assert.True(authenticated);
 
@@ -183,8 +191,9 @@ namespace Crossdyne.Security.Tests
         public async Task FullSrpFlow_ConcurrentAuthentications_DoesNotInterfere()
         {
             // === Registration ===
+            var context = SrpHelper.GetSrpContext();
             var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash);
+            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
@@ -194,10 +203,10 @@ namespace Crossdyne.Security.Tests
             {
                 tasks[i] = Task.Run(() =>
                 {
-                    var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier);
-                    var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB);
-                    var M2 = _server.VerifySrpProof(challenge, A, M1);
-                    return _client.VerifyServerM2(A, M1, S, M2);
+                    var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
+                    var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB, context);
+                    var M2 = _server.VerifySrpProof(challenge, A, M1, context);
+                    return _client.VerifyServerM2(A, M1, S, M2, context);
                 });
             }
 

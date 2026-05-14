@@ -5,6 +5,7 @@ using Crossdyne.Security.Configuration;
 using Crossdyne.Security.Cryptography;
 using Crossdyne.Security.Exceptions;
 using Crossdyne.Security.Srp.Server;
+using Crossdyne.Security.Tests.Helpers;
 using Crossdyne.Security.Utilities;
 
 namespace Crossdyne.Security.Tests
@@ -28,35 +29,38 @@ namespace Crossdyne.Security.Tests
 
         private byte[] GenerateVerifierBytes(string login, string password, byte[] salt)
         {
+            var context = SrpHelper.GetSrpContext();
             var (_, authHash) = _kdf.DeriveKeysFromPassword(login, password, salt);
             var authHashBytes = Convert.FromBase64String(authHash);
             var x = new BigInteger(authHashBytes, isBigEndian: true, isUnsigned: true);
-            var v = BigInteger.ModPow(SecurityConstants.g, x, SecurityConstants.N);
-            return SrpEncoding.ToModulusBytes(v);
+            var v = BigInteger.ModPow(context.G, x, context.N);
+            return SrpEncoding.ToModulusBytes(context, v);
         }
 
         private SrpSessionState CreateValidSession(byte[] verifierBytes, out byte[] bBytes, out BigInteger B)
         {
+            var context = SrpHelper.GetSrpContext();
             bBytes = RandomNumberGenerator.GetBytes(32);
             var b = new BigInteger(bBytes, isBigEndian: true, isUnsigned: true);
             var v = new BigInteger(verifierBytes, isBigEndian: true, isUnsigned: true);
-            var gB = BigInteger.ModPow(SecurityConstants.g, b, SecurityConstants.N);
-            B = (SecurityConstants.k * v + gB) % SecurityConstants.N;
+            var gB = BigInteger.ModPow(context.G, b, context.N);
+            B = (context.K * v + gB) % context.N;
 
             return new SrpSessionState(
                 TestLogin,
                 Convert.ToBase64String(bBytes),
                 Convert.ToBase64String(verifierBytes),
-                Convert.ToBase64String(SrpEncoding.ToModulusBytes(B))
+                Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B))
             );
         }
 
         private (string A, string M1, string S) GenerateValidClientProof(string login, string password, byte[] salt, BigInteger B)
         {
+            var context = SrpHelper.GetSrpContext();
             var client = new Srp.Client.SrpClientService();
             var saltBase64 = Convert.ToBase64String(salt).Replace('+', '-').Replace('/', '_');
-            var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(B));
-            return client.GenerateSrpProof(login, password, saltBase64, B_base64);
+            var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
+            return client.GenerateSrpProof(login, password, saltBase64, B_base64, context);
         }
 
         #endregion
@@ -67,10 +71,11 @@ namespace Crossdyne.Security.Tests
         public void GetSrpChallenge_ValidVerifier_ReturnsValidSession()
         {
             // Arrange
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
 
             // Act
-            var session = _server.GetSrpChallenge(TestLogin, verifierBytes);
+            var session = _server.GetSrpChallenge(TestLogin, verifierBytes, context);
 
             // Assert
             Assert.Equal(TestLogin, session.Login);
@@ -84,19 +89,20 @@ namespace Crossdyne.Security.Tests
             var BBytes = Convert.FromBase64String(session.PublicKeyB);
             
             Assert.Equal(32, bBytes.Length);
-            Assert.Equal(SecurityConstants.ModulusSize, vBytes.Length);
-            Assert.Equal(SecurityConstants.ModulusSize, BBytes.Length);
+            Assert.Equal(context.ModulusSize, vBytes.Length);
+            Assert.Equal(context.ModulusSize, BBytes.Length);
         }
 
         [Fact]
         public void GetSrpChallenge_DifferentCalls_ProducesDifferentB()
         {
             // Arrange
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
 
             // Act
-            var session1 = _server.GetSrpChallenge(TestLogin, verifierBytes);
-            var session2 = _server.GetSrpChallenge(TestLogin, verifierBytes);
+            var session1 = _server.GetSrpChallenge(TestLogin, verifierBytes, context);
+            var session2 = _server.GetSrpChallenge(TestLogin, verifierBytes, context);
 
             // Assert
             // B should differ due to random 'b'
@@ -110,19 +116,22 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void GetSrpChallenge_NullVerifier_ThrowsArgumentNullException()
         {
+            var context = SrpHelper.GetSrpContext();
+
             // Act & Assert
             Assert.Throws<ArgumentNullException>(() => 
-                _server.GetSrpChallenge(TestLogin, null!));
+                _server.GetSrpChallenge(TestLogin, null!, context));
         }
 
         [Fact]
         public void GetSrpChallenge_EmptyVerifier_ProducesValidButInsecureSession()
         {
             // Arrange: Empty verifier (edge case)
+            var context = SrpHelper.GetSrpContext();
             var emptyVerifier = Array.Empty<byte>();
 
             // Act
-            var session = _server.GetSrpChallenge(TestLogin, emptyVerifier);
+            var session = _server.GetSrpChallenge(TestLogin, emptyVerifier, context);
 
             // Assert: Should not throw, but produces insecure state
             Assert.NotNull(session);
@@ -137,17 +146,18 @@ namespace Crossdyne.Security.Tests
         public void VerifySrpProof_ValidClientProof_ReturnsValidM2()
         {
             // Arrange: Full setup
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out var B);
             var (A, M1, S) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
 
             // Act
-            var M2 = _server.VerifySrpProof(session, A, M1);
+            var M2 = _server.VerifySrpProof(session, A, M1, context);
 
             // Assert
             Assert.NotNull(M2);
             var m2Bytes = Convert.FromBase64String(M2);
-            Assert.Equal(SecurityConstants.KeySizeBytes, m2Bytes.Length); // SHA-256
+            Assert.Equal(context.HashSize, m2Bytes.Length); // SHA-256
         }
 
         [Fact]
@@ -157,6 +167,7 @@ namespace Crossdyne.Security.Tests
             // This tests that server computation is deterministic given inputs
             
             // Arrange
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out var B);
             var (A1, M1_1, S1) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
@@ -165,8 +176,8 @@ namespace Crossdyne.Security.Tests
             var (A2, M1_2, S2) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
 
             // Act
-            var M2_1 = _server.VerifySrpProof(session, A1, M1_1);
-            var M2_2 = _server.VerifySrpProof(session, A2, M1_2);
+            var M2_1 = _server.VerifySrpProof(session, A1, M1_1, context);
+            var M2_2 = _server.VerifySrpProof(session, A2, M1_2, context);
 
             // Assert: M2 will differ because A and M1 differ
             Assert.NotEqual(M2_1, M2_2);
@@ -184,65 +195,70 @@ namespace Crossdyne.Security.Tests
         public void VerifySrpProof_ZeroVerifier_ThrowsSrpVerificationException()
         {
             // Arrange: Create session with zero verifier
-            var zeroVerifier = new byte[SecurityConstants.ModulusSize];
+            var context = SrpHelper.GetSrpContext();
+            var zeroVerifier = new byte[context.ModulusSize];
             var session = CreateValidSession(zeroVerifier, out _, out _);
             // Override verifier to zero
             var zeroV = BigInteger.Zero;
             session = new SrpSessionState(
                 session.Login,
                 session.PrivateKeyB,
-                Convert.ToBase64String(SrpEncoding.ToModulusBytes(zeroV)),
+                Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, zeroV)),
                 session.PublicKeyB
             );
             
-            var invalidA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(BigInteger.One));
+            var invalidA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, BigInteger.One));
             var invalidM1 = Convert.ToBase64String(new byte[32]);
 
             // Act & Assert
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, invalidA, invalidM1));
+            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, invalidA, invalidM1, context));
         }
 
         [Fact]
         public void VerifySrpProof_AEqualsZero_ThrowsSrpVerificationException()
         {
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out _);
             
-            var zeroA = Convert.ToBase64String(new byte[SecurityConstants.ModulusSize]);
+            var zeroA = Convert.ToBase64String(new byte[context.ModulusSize]);
             var dummyM1 = Convert.ToBase64String(new byte[32]);
 
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, zeroA, dummyM1));
+            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, zeroA, dummyM1, context));
         }
 
         [Fact]
         public void VerifySrpProof_AOutOfRange_ThrowsSrpVerificationException()
         {
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out _);
             
             // A >= N is invalid
-            var invalidA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(SecurityConstants.N));
+            var invalidA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, context.N));
             var dummyM1 = Convert.ToBase64String(new byte[32]);
 
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, invalidA, dummyM1));
+            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, invalidA, dummyM1, context));
         }
 
         [Fact]
         public void VerifySrpProof_WrongPassword_ThrowsSrpVerificationException()
         {
             // Arrange: Server expects password "correct", client uses "wrong"
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, "correct_password", _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out var B);
             
             // Client proves with wrong password
             var (A, M1, _) = GenerateValidClientProof(TestLogin, "wrong_password", _testSalt, B);
 
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, A, M1));
+            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, A, M1, context));
         }
 
         [Fact]
         public void VerifySrpProof_TamperedM1_ThrowsSrpVerificationException()
         {
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out var B);
             var (A, M1, _) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
@@ -252,7 +268,7 @@ namespace Crossdyne.Security.Tests
             m1Bytes[0] ^= 0xFF;
             var tamperedM1 = Convert.ToBase64String(m1Bytes);
 
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, A, tamperedM1));
+            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, A, tamperedM1, context));
         }
 
         [Fact]
@@ -261,6 +277,7 @@ namespace Crossdyne.Security.Tests
             // This test documents that FixedTimeEquals is used
             // Actual timing attack testing requires statistical analysis
 
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out var B);
             var (A, M1, _) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
@@ -275,7 +292,7 @@ namespace Crossdyne.Security.Tests
                 tampered[i] ^= 0x01;
                 var tamperedM1 = Convert.ToBase64String(tampered);
                 
-                Assert.Throws<SrpVerificationException>(() =>  _server.VerifySrpProof(session, A, tamperedM1));
+                Assert.Throws<SrpVerificationException>(() =>  _server.VerifySrpProof(session, A, tamperedM1, context));
             }
         }
 
@@ -283,47 +300,25 @@ namespace Crossdyne.Security.Tests
 
         #region VerifySrpProof - Input Validation
 
-        // [Theory]
-        // [InlineData(null)]
-        // [InlineData("")]
-        // public void VerifySrpProof_NullSession_ThrowsException(string? nullSession)
-        // {
-        //     // Act & Assert
-        //     Assert.Throws<ArgumentNullException>(() => 
-        //         _server.VerifySrpProof(null!, "A", "M1"));
-        // }
-
-        // [Theory]
-        // [InlineData(null, "M1")]
-        // [InlineData("A", null)]
-        // public void VerifySrpProof_NullProofValues_ThrowsException(string? a, string? m1)
-        // {
-        //     // Arrange
-        //     var verifierBytes = GenerateVerifierBytes(TestPassword, _testSalt);
-        //     var session = CreateValidSession(verifierBytes, out _, out _);
-
-        //     // Act & Assert
-        //     Assert.Throws<ArgumentNullException>(() => 
-        //         _server.VerifySrpProof(session, a!, m1!));
-        // }
-
         [Fact]
         public void VerifySrpProof_InvalidBase64A_ThrowsFormatException()
         {
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out _);
 
-            Assert.Throws<FormatException>(() => _server.VerifySrpProof(session, "!!!invalid!!!", "M1"));
+            Assert.Throws<FormatException>(() => _server.VerifySrpProof(session, "!!!invalid!!!", "M1", context));
         }
 
         [Fact]
         public void VerifySrpProof_InvalidBase64M1_ThrowsFormatException()
         {
+            var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out _);
-            var validA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(BigInteger.One));
+            var validA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, BigInteger.One));
 
-            Assert.Throws<FormatException>(() => _server.VerifySrpProof(session, validA, "!!!invalid!!!"));
+            Assert.Throws<FormatException>(() => _server.VerifySrpProof(session, validA, "!!!invalid!!!", context));
         }
 
         #endregion
@@ -337,14 +332,15 @@ namespace Crossdyne.Security.Tests
             // Since ToFixedLength is private, we test its behavior through public API
             
             // Arrange: Small BigInteger
+            var context = SrpHelper.GetSrpContext();
             var small = BigInteger.One;
-            
+
             // Act: Generate challenge and verify B has correct length
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = _server.GetSrpChallenge(TestLogin, verifierBytes);
+            var session = _server.GetSrpChallenge(TestLogin, verifierBytes, context);
             var BBytes = Convert.FromBase64String(session.PublicKeyB);
 
-            Assert.Equal(SecurityConstants.ModulusSize, BBytes.Length);
+            Assert.Equal(context.ModulusSize, BBytes.Length);
         }
 
         [Fact]
@@ -372,13 +368,14 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void VerifySrpProof_VeryLargeLogin_HandlesCorrectly()
         {
+            var context = SrpHelper.GetSrpContext();
             var longLogin = new string('u', 1000) + "@example.com";
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
+            var verifierBytes = GenerateVerifierBytes(longLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out var B);
-            var (A, M1, _) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
+            var (A, M1, _) = GenerateValidClientProof(longLogin, TestPassword, _testSalt, B);
 
             // Act: Login is not used in crypto, just stored in session
-            var M2 = _server.VerifySrpProof(session, A, M1);
+            var M2 = _server.VerifySrpProof(session, A, M1, context);
 
             // Assert
             Assert.NotNull(M2);
@@ -387,14 +384,15 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void GetSrpChallenge_VerifierLargerThanModulus_TrimsCorrectly()
         {
+            var context = SrpHelper.GetSrpContext();
             // Arrange: Create verifier that's larger than ModulusSize when serialized
-            var largeV = SecurityConstants.N * 2; // Larger than N
+            var largeV = context.N * 2; // Larger than N
             var largeVerifierBytes = largeV.ToByteArray(isUnsigned: true, isBigEndian: true);
  
-            var session = _server.GetSrpChallenge(TestLogin, largeVerifierBytes);
+            var session = _server.GetSrpChallenge(TestLogin, largeVerifierBytes, context);
 
             var BBytes = Convert.FromBase64String(session.PublicKeyB);
-            Assert.Equal(SecurityConstants.ModulusSize, BBytes.Length);
+            Assert.Equal(context.ModulusSize, BBytes.Length);
         }
 
         #endregion
