@@ -35,8 +35,8 @@ namespace Crossdyne.Security.Srp.Client
 
             string cleanSalt = saltBase64.Replace('-', '+').Replace('_', '/');
             byte[] salt = Convert.FromBase64String(cleanSalt);
-            var (_, AuthHash) = keyDerivationService.DeriveKeysFromPassword(login, password, salt);
-            byte[] authHashBytes = Convert.FromBase64String(AuthHash);
+            byte[] authHashBytes = keyDerivationService.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName);
+
             BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);
 
             byte[] aBytes = new byte[32];

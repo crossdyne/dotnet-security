@@ -36,8 +36,8 @@ namespace Crossdyne.Security.Tests
             // === PHASE 1: Registration ===
             // Client: Derive auth hash and generate verifier
             var context = SrpHelper.GetSrpContext();
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
+            var authHash = _kdf.DeriveAuthHashForSrp(TestLogin, TestPassword, _salt, context.HashAlgorithmName);
+            var verifierBase64 = _client.GenerateSrpVerifier(Convert.ToBase64String(authHash), context);
             var verifierBytes = Convert.FromBase64String(verifierBase64);
             
             // Server: Store verifier (simulated)
@@ -129,8 +129,8 @@ namespace Crossdyne.Security.Tests
         {
             // === Registration ===
              var context = SrpHelper.GetSrpContext();
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
+            var authHash = _kdf.DeriveAuthHashForSrp(TestLogin, TestPassword, _salt, context.HashAlgorithmName);
+            var verifierBase64 = _client.GenerateSrpVerifier(Convert.ToBase64String(authHash), context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
@@ -158,8 +158,8 @@ namespace Crossdyne.Security.Tests
         {
             // === Full SRP flow to get session key ===
             var context = SrpHelper.GetSrpContext();
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
+            var authHash = _kdf.DeriveAuthHashForSrp(TestLogin, TestPassword, _salt, context.HashAlgorithmName);
+            var verifierBase64 = _client.GenerateSrpVerifier(Convert.ToBase64String(authHash), context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
             
             var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
@@ -192,8 +192,8 @@ namespace Crossdyne.Security.Tests
         {
             // === Registration ===
             var context = SrpHelper.GetSrpContext();
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _salt);
-            var verifierBase64 = _client.GenerateSrpVerifier(authHash, context);
+            var authHash = _kdf.DeriveAuthHashForSrp(TestLogin, TestPassword, _salt, context.HashAlgorithmName);
+            var verifierBase64 = _client.GenerateSrpVerifier(Convert.ToBase64String(authHash), context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 

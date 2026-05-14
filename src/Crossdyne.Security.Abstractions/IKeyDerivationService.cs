@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using Crossdyne.Security.Configuration;
 
 namespace Crossdyne.Security.Abstractions
@@ -35,5 +36,11 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="options">Optional crypto configuration options.</param>
         /// <returns>A tuple containing the Key Encryption Key (KEK) and authentication hash.</returns>
         public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, KdfOptions? options = null);
+        
+        /// <summary>
+        /// Derives keys specifically for the SRP protocol, ensuring the AuthHash length
+        /// matches the SRP hash algorithm (SHA-256/384/512).
+        /// </summary>
+        byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm,  KdfOptions? options = null);
     }
 }

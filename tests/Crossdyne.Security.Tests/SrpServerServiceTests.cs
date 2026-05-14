@@ -30,9 +30,8 @@ namespace Crossdyne.Security.Tests
         private byte[] GenerateVerifierBytes(string login, string password, byte[] salt)
         {
             var context = SrpHelper.GetSrpContext();
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(login, password, salt);
-            var authHashBytes = Convert.FromBase64String(authHash);
-            var x = new BigInteger(authHashBytes, isBigEndian: true, isUnsigned: true);
+            var authHash = _kdf.DeriveAuthHashForSrp(login, password, salt, context.HashAlgorithmName);
+            var x = new BigInteger(authHash, isBigEndian: true, isUnsigned: true);
             var v = BigInteger.ModPow(context.G, x, context.N);
             return SrpEncoding.ToModulusBytes(context, v);
         }
