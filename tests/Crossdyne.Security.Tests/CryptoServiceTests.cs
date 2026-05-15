@@ -225,7 +225,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void EncryptedData_WithCustomOptions_UsesSpecifiedConfiguration()
         {
-            var options = CryptoOptions.Create()
+            var options = AesGcmOptions.Create()
                 .WithTagSize(14)
                 .WithAssociatedData("context:user:123")
                 .Build();
@@ -255,25 +255,11 @@ namespace Crossdyne.Security.Tests
         }
 
         [Fact]
-        public void EncryptedData_WithCustomIterations_AppliesConfiguration()
-        {
-            // Note: PBKDF2 iterations don't affect AES-GCM directly in this service,
-            // but the overload should still accept and pass through the parameter.
-
-            const string original = "Test";
-
-            var encrypted = _service.EncryptedData(original, _validKey, pbkdf2Iterations: 700_000);
-            var decrypted = _service.DecryptData<string>(encrypted, _validKey);
-
-            Assert.Equal(original, decrypted);
-        }
-
-        [Fact]
         public void DecryptData_WithMismatchedOptions_ThrowsDecryptionException()
         {
             const string original = "Secret";
-            var encryptOptions = CryptoOptions.Create().WithTagSize(14).Build();
-            var decryptOptions = CryptoOptions.Create().WithTagSize(16).Build(); // Different!
+            var encryptOptions = AesGcmOptions.Create().WithTagSize(14).Build();
+            var decryptOptions = AesGcmOptions.Create().WithTagSize(16).Build(); // Different!
             
             var encrypted = _service.EncryptedData(original, _validKey, encryptOptions);
 
@@ -286,7 +272,7 @@ namespace Crossdyne.Security.Tests
         {
             const string original = "Confidential";
             var aad = Encoding.UTF8.GetBytes("user:42:session:abc");
-            var options = CryptoOptions.Create().WithAssociatedData(aad).Build();
+            var options = AesGcmOptions.Create().WithAssociatedData(aad).Build();
             
             var encrypted = _service.EncryptedData(original, _validKey, options);
 
@@ -296,7 +282,7 @@ namespace Crossdyne.Security.Tests
             Assert.Equal(original, decrypted);
 
             // Act: Decrypt with different AAD - should fail
-            var wrongOptions = CryptoOptions.Create()
+            var wrongOptions = AesGcmOptions.Create()
                 .WithAssociatedData("user:42:session:xyz")
                 .Build();
             
@@ -309,7 +295,7 @@ namespace Crossdyne.Security.Tests
             const string original = "Data";
             var encrypted = _service.EncryptedData(original, _validKey); // No AAD
             
-            var optionsWithAad = CryptoOptions.Create()
+            var optionsWithAad = AesGcmOptions.Create()
                 .WithAssociatedData("some-aad")
                 .Build();
 
@@ -353,7 +339,7 @@ namespace Crossdyne.Security.Tests
         public void Encrypt_OutputContains_Nonce_Ciphertext_Tag()
         {
             const string original = "Test";
-            var options = CryptoOptions.Default;
+            var options = AesGcmOptions.Default;
 
             var encrypted = _service.EncryptedData(original, _validKey, options);
             var bytes = Convert.FromBase64String(encrypted);

@@ -63,18 +63,32 @@ namespace Crossdyne.Security.Utilities
         /// <summary>
         /// Computes a SHA-256 hash over the concatenation of multiple byte arrays and returns the result as a <see cref="BigInteger"/>.
         /// </summary>
+        /// <param name="hashAlgorithmName">Hashing algorithm.</param>
         /// <param name="buffers">The byte arrays to hash.</param>
         /// <returns>The hash result as an unsigned, big-endian <see cref="BigInteger"/>.</returns>
-        public static BigInteger Hash(params byte[][] buffers)
+        public static BigInteger Hash(HashAlgorithmName hashAlgorithmName, params byte[][] buffers)
         {
-            using var ms = new MemoryStream();
+            using var incrementalHash = IncrementalHash.CreateHash(hashAlgorithmName);
 
             foreach (var buffer in buffers)
-                ms.Write(buffer);
-                
-            byte[] hash = SHA256.HashData(ms.ToArray());
+                incrementalHash.AppendData(buffer);
+
+            byte[] hash = incrementalHash.GetHashAndReset();
 
             return new BigInteger(hash, isUnsigned: true, isBigEndian: true);
+        }
+
+        /// <summary>
+        /// Computes a hash over the concatenation of multiple byte arrays and returns the raw hash bytes.
+        /// </summary>
+        public static byte[] ComputeHash(HashAlgorithmName hashAlgorithmName, params byte[][] buffers)
+        {
+            using var incrementalHash = IncrementalHash.CreateHash(hashAlgorithmName);
+
+            foreach (var buffer in buffers)
+                incrementalHash.AppendData(buffer);
+
+            return incrementalHash.GetHashAndReset();
         }
     }
 }
