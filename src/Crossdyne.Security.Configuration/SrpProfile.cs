@@ -3,36 +3,23 @@ using System.Security.Cryptography;
 namespace Crossdyne.Security.Configuration
 {
     /// <summary>
-    /// 
+    /// Immutable named SRP-6a profile aggregating <see cref="SrpOptions"/> with denormalized properties.
     /// </summary>
     public class SrpProfile
     {
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Unique profile name.</summary>
         public string Name { get; init; } = null!;
         
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>SRP cryptographic options (authoritative parameter source).</summary>
         public SrpOptions Options { get; init; } = null!;
-        
-        /// <summary>
-        /// 
-        /// </summary>
+
+        /// <summary>Diffie-Hellman group (mirrors <see cref="SrpOptions.Group"/>).</summary>
         public SrpGroup Group { get; init; }
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Hash algorithm (mirrors <see cref="SrpOptions.HashAlgorithmName"/>).</summary>
         public HashAlgorithmName HashAlgorithm { get; init; }
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Salt size in bytes (mirrors <see cref="SrpOptions.SaltSize"/>).</summary>
         public int SaltSize { get; init; }
-
-        // Optional: SRP protocol version identifier for future extensibility
-        // public SrpVersion Version { get; init; }
     }
 }

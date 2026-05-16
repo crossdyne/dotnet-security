@@ -3,16 +3,16 @@ using Crossdyne.Security.Exceptions;
 namespace Crossdyne.Security.Configuration
 {
     /// <summary>
-    /// 
+    /// Registry of predefined <see cref="CryptoProfile"/> instances by version.
+    /// Thread-safe, returns a fresh profile per call.
     /// </summary>
     public static class CryptoProfileRegistry
     {
         /// <summary>
-        /// 
+        /// Returns a <see cref="CryptoProfile"/> for the specified <paramref name="version"/>.
+        /// Supported versions: <see cref="CryptoVersion.V1"/> (default KDF + AES-GCM).
         /// </summary>
-        /// <param name="version"></param>
-        /// <returns></returns>
-        /// <exception cref="SecurityException"></exception>
+        /// <exception cref="SecurityException">Version not supported.</exception>
         public static CryptoProfile GetProfile(CryptoVersion version)
         {
             return version switch
@@ -28,7 +28,8 @@ namespace Crossdyne.Security.Configuration
         }
 
         /// <summary>
-        /// 
+        /// Latest supported profile. Currently <see cref="CryptoVersion.V1"/>.
+        /// Use explicit version for long-term stored data to avoid future changes.
         /// </summary>
         public static CryptoProfile Latest => GetProfile(CryptoVersion.V1);
     }
