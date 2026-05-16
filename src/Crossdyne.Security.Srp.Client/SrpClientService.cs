@@ -8,27 +8,19 @@ using Crossdyne.Security.Utilities;
 namespace Crossdyne.Security.Srp.Client
 {
     /// <summary>
-    /// Client-side implementation of the Secure Remote Password (SRP) protocol.
-    /// Handles proof generation, verifier creation, and server authentication verification.
+    /// Client-side SRP-6a implementation: proof generation, verifier creation, server M2 verification.
     /// </summary>
     public class SrpClientService : ISrpClient
     {
         /// <summary>
-        /// Generates the SRP client proof values required for authentication.
+        /// Generates client proof (A, M1, session key S) from server challenge.
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="login">User Login.</param>
-        /// <param name="password">The user's plain-text password.</param>
-        /// <param name="saltBase64">The salt provided by the server, encoded in URL-safe Base64.</param>
-        /// <param name="B_base64">The server's public ephemeral value (B), encoded in URL-safe Base64.</param>
-        /// <returns>
-        /// A tuple containing:
-        /// <list type="bullet">
-        /// <item><description><c>A</c>: The client's public ephemeral value, Base64-encoded.</description></item>
-        /// <item><description><c>M1</c>: The client's proof message (M1), Base64-encoded.</description></item>
-        /// <item><description><c>S</c>: The shared session key, Base64-encoded.</description></item>
-        /// </list>
-        /// </returns>
+        /// <param name="login">User login.</param>
+        /// <param name="password">Plaintext password.</param>
+        /// <param name="saltBase64">Server salt (URL-safe Base64).</param>
+        /// <param name="B_base64">Server public ephemeral B (URL-safe Base64).</param>
+        /// <param name="ctx">SRP context (hash algorithm, N, g, etc.).</param>
+        /// <returns>Tuple (A, M1, S) as Base64 strings.</returns>
         public (string A, string M1, string S) GenerateSrpProof(string login, string password, string saltBase64, string B_base64, SrpContext ctx)    
         {
             KeyDerivationService keyDerivationService = new();
@@ -73,12 +65,11 @@ namespace Crossdyne.Security.Srp.Client
         }
 
         /// <summary>
-        /// Generates the SRP password verifier (v) from the authentication hash.
-        /// This value is stored on the server and used to verify the client's proof without storing the password.
+        /// Computes SRP verifier v = g^x mod N from the authentication hash.
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="authHash">The authentication hash derived from the user's password and salt, Base64-encoded.</param>
-        /// <returns>The verifier value (v) as a URL-safe Base64-encoded string.</returns>
+        /// <param name="authHash">Auth hash (Base64).</param>
+        /// <param name="ctx">SRP context.</param>
+        /// <returns>Verifier as URL-safe Base64 string.</returns>
         public string GenerateSrpVerifier(string authHash, SrpContext ctx)
         {
             byte[] authHashBytes = Convert.FromBase64String(authHash);
@@ -89,14 +80,14 @@ namespace Crossdyne.Security.Srp.Client
         }
 
         /// <summary>
-        /// Verifies the server's proof message (M2) to authenticate the server to the client.
+        /// Validates the server proof M2 to authenticate the server.
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="publicA">The client's private ephemeral value (publicA), Base64-encoded.</param>
-        /// <param name="m1">The client's proof message (M1), Base64-encoded.</param>
-        /// <param name="s">The shared session key (S), Base64-encoded.</param>
-        /// <param name="serverM2">The server's proof message (M2), Base64-encoded.</param>
-        /// <returns><c>true</c> if the server's proof is valid; otherwise, <c>false</c>.</returns>
+        /// <param name="publicA">Client public A (Base64).</param>
+        /// <param name="m1">Client proof M1 (Base64).</param>
+        /// <param name="s">Session key S (Base64).</param>
+        /// <param name="serverM2">Server proof M2 (Base64).</param>
+        /// <param name="ctx">SRP context.</param>
+        /// <returns>True if the server proof is valid.</returns>
         public bool VerifyServerM2(string publicA, string m1, string s, string serverM2, SrpContext ctx)
         {
             BigInteger A = BigIntegerUtilities.FromBase64(publicA);

@@ -1,6 +1,3 @@
-using System.Globalization;
-using System.Numerics;
-
 namespace Crossdyne.Security.Configuration
 {
     /// <summary>
@@ -31,7 +28,7 @@ namespace Crossdyne.Security.Configuration
 
         // === KDF Parameters ===
 
-        /// <summary>Default PBKDF2 iterations (balanced security/performance as of 2024).</summary>
+        /// <summary>Default PBKDF2 iterations.</summary>
         public const int Pbkdf2IterationsDefault = 600_000;
         
         /// <summary>Minimum safe PBKDF2 iterations. Values below this are rejected.</summary>

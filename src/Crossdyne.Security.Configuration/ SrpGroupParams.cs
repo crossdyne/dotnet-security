@@ -3,16 +3,22 @@ using System.Numerics;
 
 namespace Crossdyne.Security.Configuration
 {
-    /// <summary>
-    /// 
+     /// <summary>
+    /// Provides prime modulus (<c>N</c>) and generator (<c>g</c>) for SRP-6a (RFC 5054).
     /// </summary>
+    /// <remarks>
+    /// Supported groups (bits → security): 1024 (~80, deprecated), 1536 (~90, legacy), 
+    /// 2048 (~112, baseline), 3072 (~128, preferred), 4096 (~156), 6144 (~192), 8192 (~256).
+    /// Generators: g=2 for 1024/1536/2048; g=5 for 3072/4096/6144; g=19 for 8192.
+    /// Use <see cref="GetN"/> and <see cref="GetG"/>; <see cref="SrpGroup.Custom"/> throws 
+    /// <see cref="NotImplementedException"/>.
+    /// Thread-safe, stateless.
+    /// </remarks>
     public static class SrpGroupParams
     {
-        
-#pragma warning disable CS0419 // Неоднозначная ссылка в атрибуте cref
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Returns prime modulus <c>N</c> for the group.</summary>
+        /// <exception cref="NotSupportedException">Group not recognized.</exception>
+        /// <exception cref="NotImplementedException">Group is <see cref="SrpGroup.Custom"/>.</exception>
         public static BigInteger GetN(SrpGroup group) => group switch
         {
             // RFC 5054, Appendix A.1 — 1024-bit prime modulus
@@ -195,12 +201,10 @@ namespace Crossdyne.Security.Configuration
                 SrpGroup.Custom => throw new NotImplementedException("For Custom groups, N and g parameters must be provided by the caller."),
                     _ => throw new NotSupportedException($"SRP group '{group}' is not supported.")
         };
-        
-#pragma warning restore CS0419 // Неоднозначная ссылка в атрибуте cref
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Returns generator <c>g</c> for the group.</summary>
+        /// <exception cref="NotSupportedException">Group not recognized.</exception>
+        /// <exception cref="NotImplementedException">Group is <see cref="SrpGroup.Custom"/>.</exception>
         public static BigInteger GetG(SrpGroup group) => group switch
         {
             SrpGroup.Rfc5054_1024 => new BigInteger(2),

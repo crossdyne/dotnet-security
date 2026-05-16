@@ -4,8 +4,14 @@ using Crossdyne.Security.Configuration;
 namespace Crossdyne.Security.Abstractions
 {
     /// <summary>
-    /// Provides key derivation services using PBKDF2 algorithm.
+    /// Two-stage key derivation: PBKDF2 (master key) → HKDF (sub-keys). Thread-safe.
     /// </summary>
+    /// <remarks>
+    /// Derived sub-keys: KEK (AES-GCM) and AuthHash (server verification).
+    /// HKDF info strings ensure key separation.
+    /// Salts must be random, unique, and at least 16 bytes.
+    /// Sensitive buffers are cleared after use.
+    /// </remarks>
     public interface IKeyDerivationService
     {
         /// <summary>

@@ -4,42 +4,34 @@ using System.Security.Cryptography;
 namespace Crossdyne.Security.Configuration
 {
     /// <summary>
-    /// 
+    /// Immutable configuration for SRP-6a. Parameters aligned with RFC 5054.
     /// </summary>
+    /// <remarks>
+    /// Use init-only properties to construct. Compute <c>k</c> via <see cref="ComputeK"/>.
+    /// </remarks>
     public class SrpOptions
     {
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Diffie-Hellman group. Default <see cref="SrpGroup.Rfc5054_3072"/> (g=5).</summary>
         public SrpGroup Group { get; init; } = SrpGroup.Rfc5054_3072;
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Hash algorithm for SRP computations. Default SHA256.</summary>
         public HashAlgorithmName HashAlgorithmName { get; init; } = HashAlgorithmName.SHA256;
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Salt size in bytes. Default 32. Use a secure random generator.</summary>
         public int SaltSize { get; init; } = 32;
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Prime modulus N for the selected group.</summary>
         public BigInteger N => SrpGroupParams.GetN(Group);
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Generator g for the selected group (2, 5, or 19).</summary>
         public int G => (int)SrpGroupParams.GetG(Group);
 
-        /// <summary>
-        /// 
-        /// </summary>
+        /// <summary>Byte length of N (ceil(bitLength / 8)).</summary>
         public int ModulusSize => (int)((N.GetBitLength() + 7) / 8);
 
         /// <summary>
-        /// 
+        /// Computes the multiplier parameter k = H(PAD(N) || PAD(g)) (RFC 5054, 2.5.3).
+        /// Thread-safe.
         /// </summary>
         public BigInteger ComputeK()
         {
@@ -55,9 +47,6 @@ namespace Crossdyne.Security.Configuration
             return new BigInteger(kBytes, isUnsigned: true, isBigEndian: true);
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
         private static byte[] Concat(byte[] a, byte[] b)
         {
             var result = new byte[a.Length + b.Length];
@@ -68,13 +57,6 @@ namespace Crossdyne.Security.Configuration
             return result;
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="value"></param>
-        /// <param name="length"></param>
-        /// <returns></returns>
-        /// <exception cref="ArgumentException"></exception>
         private static byte[] ToFixedLengthBytes(BigInteger value, int length)
         {
             if (length <= 0) throw 

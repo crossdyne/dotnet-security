@@ -4,19 +4,16 @@ using System.Security.Cryptography;
 namespace Crossdyne.Security.Utilities
 {    
     /// <summary>
-    /// Provides utility methods for handling <see cref="BigInteger"/> operations in cryptographic contexts.
+    /// Utility methods for <see cref="BigInteger"/> in cryptographic contexts.
     /// </summary>
     public static class BigIntegerUtilities
     {
         /// <summary>
-        /// Converts a <see cref="BigInteger"/> to a big-endian byte array of fixed length.
-        /// If the value is too large, the most significant bytes are truncated.
-        /// If too short, it is left-padded with zeros.
+        /// Converts <see cref="BigInteger"/> to fixed-length big-endian bytes (truncates/pads).
         /// </summary>
-        /// <param name="value">The value to convert.</param>
-        /// <param name="length">The desired output length in bytes.</param>
-        /// <returns>A byte array of the specified length.</returns>
-        /// <exception cref="ArgumentException">Thrown if <paramref name="length"/> is not positive.</exception>
+        /// <param name="length">Output length in bytes (must be positive).</param>
+        /// <param name="value">.</param>
+        /// <exception cref="ArgumentException">Length &lt;= 0.</exception>
         public static byte[] ToFixedLengthBytes(BigInteger value, int length)
         {
             if (length <= 0) throw 
@@ -38,12 +35,9 @@ namespace Crossdyne.Security.Utilities
         }
 
         /// <summary>
-        /// Parses a URL-safe Base64-encoded string into a <see cref="BigInteger"/>.
-        /// Handles padding and character replacement to ensure compatibility with standard Base64 decoding.
+        /// Parses a URL-safe Base64 string into an unsigned, big-endian <see cref="BigInteger"/>.
         /// </summary>
-        /// <param name="base64">The URL-safe Base64 string to parse.</param>
-        /// <returns>The decoded value as a <see cref="BigInteger"/>.</returns>
-        /// <exception cref="ArgumentNullException">Thrown if <paramref name="base64"/> is null or empty.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="base64"/> is null or empty.</exception>
         public static BigInteger FromBase64(string base64)
         {
             if (string.IsNullOrEmpty(base64))
@@ -61,11 +55,10 @@ namespace Crossdyne.Security.Utilities
         }
 
         /// <summary>
-        /// Computes a SHA-256 hash over the concatenation of multiple byte arrays and returns the result as a <see cref="BigInteger"/>.
+        /// Hashes concatenated byte arrays and returns an unsigned, big-endian <see cref="BigInteger"/>.
         /// </summary>
-        /// <param name="hashAlgorithmName">Hashing algorithm.</param>
-        /// <param name="buffers">The byte arrays to hash.</param>
-        /// <returns>The hash result as an unsigned, big-endian <see cref="BigInteger"/>.</returns>
+        /// <param name="hashAlgorithmName">Hash algorithm.</param>
+        /// <param name="buffers">Byte arrays to hash.</param>
         public static BigInteger Hash(HashAlgorithmName hashAlgorithmName, params byte[][] buffers)
         {
             using var incrementalHash = IncrementalHash.CreateHash(hashAlgorithmName);
@@ -79,7 +72,7 @@ namespace Crossdyne.Security.Utilities
         }
 
         /// <summary>
-        /// Computes a hash over the concatenation of multiple byte arrays and returns the raw hash bytes.
+        /// Hashes concatenated byte arrays and returns the raw hash bytes.
         /// </summary>
         public static byte[] ComputeHash(HashAlgorithmName hashAlgorithmName, params byte[][] buffers)
         {

@@ -4,48 +4,39 @@ using Crossdyne.Security.Abstractions;
 namespace Crossdyne.Security.Utilities
 {
     /// <summary>
-    /// Provides encoding and hashing utilities specific to the SRP protocol.
-    /// Handles serialization of BigIntegers to fixed-length byte arrays and computation of protocol messages.
+    /// SRP-specific serialization and hashing utilities.
     /// </summary>
     public static class SrpEncoding
     {
         /// <summary>
-        /// Serializes a <see cref="BigInteger"/> to a big-endian byte array of length ctx.ModulusSize/>.
-        /// Used for public keys (A, B) and the modulus N.
+        /// Serializes a <see cref="BigInteger"/> to modulus-sized big-endian bytes.
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="value">The value to serialize.</param>
-        /// <returns>A byte array of fixed modulus length.</returns>
+        /// <param name="ctx">SRP context.</param>
+        /// <param name="value">Value to serialize.</param>
         public static byte[] ToModulusBytes(SrpContext ctx, BigInteger value) =>
             BigIntegerUtilities.ToFixedLengthBytes(value, ctx.ModulusSize);
 
         /// <summary>
-        /// Serializes a <see cref="BigInteger"/> to a 32-byte big-endian array.
-        /// Used for hash outputs such as u, M1, M2, and x (SHA-256).
+        /// Serializes a <see cref="BigInteger"/> to hash-sized (32-byte) big-endian bytes.
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="value">The value to serialize.</param>
-        /// <returns>A 32-byte array.</returns>
+        /// <param name="ctx">SRP context.</param>
+        /// <param name="value">Value to serialize.</param>
         public static byte[] ToHashBytes(SrpContext ctx, BigInteger value) =>
             BigIntegerUtilities.ToFixedLengthBytes(value, ctx.HashSize);
 
         /// <summary>
-        /// Computes a hash over one or more modulus-sized values (e.g., u = H(A, B)).
-        /// Each input is serialized using <see cref="ToModulusBytes"/> before hashing.
+        /// Hashes modulus-sized values (e.g., u = H(A, B)).
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="values">The BigInteger values to hash.</param>
-        /// <returns>The hash result as a <see cref="BigInteger"/>.</returns>
+        /// <param name="ctx">SRP context.</param>
+        /// <param name="values">Values to hash.</param>
         public static BigInteger HashModuli(SrpContext ctx, params BigInteger[] values) =>
             BigIntegerUtilities.Hash(ctx.HashAlgorithmName, values.Select(v => ToModulusBytes(ctx, v)).ToArray());
 
         /// <summary>
-        /// Computes a hash over mixed BigInteger values, serializing each as a modulus-sized value.
-        /// Typically used for messages like M1 = H(A, B, S).
+        /// Hashes mixed <see cref="BigInteger"/> values serialized as modulus-sized.
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="values">The BigInteger values to hash.</param>
-        /// <returns>The hash result as a <see cref="BigInteger"/>.</returns>
+        /// <param name="ctx">SRP context.</param>
+        /// <param name="values">Values to hash.</param>
         public static BigInteger HashMixed(SrpContext ctx, params BigInteger[] values)
         {
             var buffers = values.Select(v => ToModulusBytes(ctx, v)).ToArray();
@@ -53,13 +44,12 @@ namespace Crossdyne.Security.Utilities
         }
 
         /// <summary>
-        /// Computes the client proof message M1 = H(A, B, S).
+        /// Computes M1 = H(A || B || sessionKeyK).
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="A">The client's public ephemeral value.</param>
-        /// <param name="B">The server's public ephemeral value.</param>
-        /// <param name="sessionKeyK">The shared session key.</param>
-        /// <returns>The computed M1 value as a <see cref="BigInteger"/>.</returns>
+        /// <param name="ctx">SRP context.</param>
+        /// <param name="A">Client ephemeral public key.</param>
+        /// <param name="B">Server ephemeral public key.</param>
+        /// <param name="sessionKeyK">Session key bytes.</param>
         public static BigInteger ComputeM1(SrpContext ctx, BigInteger A, BigInteger B, byte[] sessionKeyK) =>
         BigIntegerUtilities.Hash(
             ctx.HashAlgorithmName,
@@ -69,13 +59,12 @@ namespace Crossdyne.Security.Utilities
         );
 
         /// <summary>
-        /// Computes the server proof message M2 = H(A, M1, S).
+        /// Computes M2 = H(A || M1 || sessionKeyK).
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="A">The client's public ephemeral value.</param>
-        /// <param name="M1">The client's proof message.</param>
-        /// <param name="sessionKeyK">The shared session key.</param>
-        /// <returns>The computed M2 value as a <see cref="BigInteger"/>.</returns>
+        /// <param name="ctx">SRP context.</param>
+        /// <param name="A">Client ephemeral public key.</param>
+        /// <param name="M1">Client proof.</param>
+        /// <param name="sessionKeyK">Session key bytes.</param>
         public static BigInteger ComputeM2(SrpContext ctx, BigInteger A, BigInteger M1, byte[] sessionKeyK) =>
         BigIntegerUtilities.Hash(
             ctx.HashAlgorithmName,
@@ -85,11 +74,10 @@ namespace Crossdyne.Security.Utilities
         );
 
         /// <summary>
-        /// 
+        /// Computes session key K = H(S).
         /// </summary>
-        /// <param name="ctx"></param>
-        /// <param name="S"></param>
-        /// <returns></returns>
+        /// <param name="ctx">SRP context.</param>
+        /// <param name="S">Shared secret.</param>
         public static byte[] ComputeSessionKey(SrpContext ctx, BigInteger S)
         {
             byte[] sBytes = ToModulusBytes(ctx, S);
