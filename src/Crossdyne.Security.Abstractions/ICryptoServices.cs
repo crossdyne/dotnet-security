@@ -3,53 +3,33 @@ using Crossdyne.Security.Configuration;
 namespace Crossdyne.Security.Abstractions
 {
     /// <summary>
-    /// Provides cryptographic services for data encryption and decryption.
+    /// Provides AES-GCM encryption and decryption with JSON serialization. Thread-safe.
     /// </summary>
     public interface ICryptoServices
     {
         /// <summary>
-        /// Encrypts data using the provided key with default PBKDF2 iterations.
+        /// Encrypts an object to a Base64 string with configurable AES-GCM options.
+        /// Nonce is generated randomly.
         /// </summary>
-        /// <typeparam name="T">The type of data to encrypt.</typeparam>
-        /// <param name="data">The data to encrypt.</param>
-        /// <param name="key">The encryption key.</param>
-        /// <returns>Base64-encoded encrypted data.</returns>
-        string EncryptedData<T>(T data, byte[] key);
-
-        /// <summary>
-        /// Encrypts data using the provided key with custom crypto options.
-        /// </summary>
-        /// <typeparam name="T">The type of data to encrypt.</typeparam>
-        /// <param name="data">The data to encrypt.</param>
-        /// <param name="key">The encryption key.</param>
-        /// <param name="options">Optional crypto configuration options.</param>
-        /// <returns>Base64-encoded encrypted data.</returns>
+        /// <typeparam name="T">Serializable type.</typeparam>
+        /// <param name="data">Object to encrypt.</param>
+        /// <param name="key">AES-256 key (32 bytes).</param>
+        /// <param name="options">AES-GCM configuration; <c>null</c> uses default.</param>
         public string EncryptedData<T>(T data, byte[] key, AesGcmOptions? options = null);
 
         /// <summary>
-        /// Decrypts data using the provided key with default options.
+        /// Decrypts a Base64 string to an object with configurable AES-GCM options.
         /// </summary>
-        /// <typeparam name="T">The type of data to decrypt.</typeparam>
-        /// <param name="encryptedBase64">The Base64-encoded encrypted data.</param>
-        /// <param name="key">The decryption key.</param>
-        /// <returns>The decrypted data, or default if decryption fails.</returns>
-        T? DecryptData<T>(string encryptedBase64, byte[] key);
-
-        /// <summary>
-        /// Decrypts data using the provided key with custom crypto options.
-        /// </summary>
-        /// <typeparam name="T">The type of data to decrypt.</typeparam>
-        /// <param name="encryptedBase64">The Base64-encoded encrypted data.</param>
-        /// <param name="key">The decryption key.</param>
-        /// <param name="options">Optional crypto configuration options.</param>
-        /// <returns>The decrypted data, or default if decryption fails.</returns>
+        /// <typeparam name="T">Target deserialization type.</typeparam>
+        /// <param name="encryptedBase64">Base64-encoded ciphertext.</param>
+        /// <param name="key">AES-256 key (32 bytes).</param>
+        /// <param name="options">AES-GCM configuration; <c>null</c> uses default.</param>
         T? DecryptData<T>(string encryptedBase64, byte[] key, AesGcmOptions? options = null);
 
         /// <summary>
-        /// Generates cryptographically secure random bytes.
+        /// Generates cryptographically secure random bytes using the system CSPRNG.
         /// </summary>
-        /// <param name="length">The number of random bytes to generate. Default is 32.</param>
-        /// <returns>A byte array containing cryptographically secure random bytes.</returns>
+        /// <param name="length">Number of bytes (default 32).</param>
         byte[] GenerateRandomBytes(int length = 32);
     }
 }
