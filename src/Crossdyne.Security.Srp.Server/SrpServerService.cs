@@ -7,18 +7,17 @@ using Crossdyne.Security.Utilities;
 namespace Crossdyne.Security.Srp.Server
 {    
     /// <summary>
-    /// Server-side implementation of the Secure Remote Password (SRP) protocol.
-    /// Handles challenge generation, client proof verification, and server proof creation.
+    /// Server-side SRP-6a: challenge generation, client proof verification, server proof creation.
     /// </summary>
     public class SrpServerService : ISrpServer
     {
         /// <summary>
-        /// Generates an SRP challenge for the client, including the server's public ephemeral value (B).
+        /// Generates server challenge B and session state from verifier.
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="login">The user's login identifier.</param>
-        /// <param name="verifierBytes">The stored password verifier (v) as a byte array.</param>
-        /// <returns>An <see cref="SrpSessionState"/> containing the session data and the challenge value B.</returns>
+        /// <param name="login">User login.</param>
+        /// <param name="verifierBytes">Stored verifier v as byte array.</param>
+        /// <param name="ctx">SRP context (hash, N, g, etc.).</param>
+        /// <returns><see cref="SrpSessionState"/> with private b, verifier, and public B.</returns>
         public SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, SrpContext ctx)
         {
             BigInteger v = new(verifierBytes, isUnsigned: true, isBigEndian: true);
@@ -41,14 +40,14 @@ namespace Crossdyne.Security.Srp.Server
         }
 
         /// <summary>
-        /// Verifies the client's SRP proof (M1) and, if valid, generates the server's proof (M2).
+        /// Verifies client M1 proof and returns server M2 proof.
         /// </summary>
-        /// <param name="ctx">SRP context with cryptographic parameters (hash, N, g, salt, user) for M2 verification.</param>
-        /// <param name="sessionState">The current SRP session state containing server-side ephemeral data.</param>
-        /// <param name="a">The client's public ephemeral value (A), Base64-encoded.</param>
-        /// <param name="m1">The client's proof message (M1), Base64-encoded.</param>
-        /// <returns>The server's proof message (M2) as a Base64-encoded string.</returns>
-        /// <exception cref="SrpVerificationException">Thrown when verification fails or input values are invalid.</exception>
+        /// <param name="sessionState">Server session state.</param>
+        /// <param name="a">Client public A (Base64).</param>
+        /// <param name="m1">Client proof M1 (Base64).</param>
+        /// <param name="ctx">SRP context.</param>
+        /// <returns>Server proof M2 as Base64 string.</returns>
+        /// <exception cref="SrpVerificationException">Verification failed or invalid input.</exception>
         public string VerifySrpProof(SrpSessionState sessionState, string a, string m1, SrpContext ctx)
         {
             BigInteger A = new(Convert.FromBase64String(a), isUnsigned: true, isBigEndian: true);
