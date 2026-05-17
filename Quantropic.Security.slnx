@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Quantropic.Security.Abstractions/Quantropic.Security.Abstractions.csproj" Id="5def9cd6-db6b-4dc4-9e34-7398795fff35" />
+    <Project Path="src/Quantropic.Security.Configuration/Quantropic.Security.Configuration.csproj" />
+    <Project Path="src/Quantropic.Security.Cryptography/Quantropic.Security.Cryptography.csproj" Id="f39b3854-241b-4324-ab23-38352d7225fa" />
+    <Project Path="src/Quantropic.Security.Exceptions/Quantropic.Security.Exceptions.csproj" />
+    <Project Path="src/Quantropic.Security.Srp.Client/Quantropic.Security.Srp.Client.csproj" Id="ca8f7281-261b-4d5d-8193-cc639ff0d1bb" />
+    <Project Path="src/Quantropic.Security.Srp.Server/Quantropic.Security.Srp.Server.csproj" Id="48b299df-e411-43c4-ad10-f19f088af6d7" />
+    <Project Path="src/Quantropic.Security.Utilities/Quantropic.Security.Utilities.csproj" Id="6d7300c9-8e21-48b2-b86a-fdba668fb6e7" />
+    <Project Path="src/Quantropic.Security.Windows/Quantropic.Security.Windows.csproj" Id="0c826c62-d107-4e6c-9aee-bffb7b7c6625" />
+    <Project Path="src/Quantropic.Security/Quantropic.Security.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Quantropic.Security.Benchmarks/Quantropic.Security.Benchmarks.csproj" Id="6b8eabae-d82d-4b7c-99a8-2ab68b8324e4" />
+    <Project Path="tests/Quantropic.Security.Tests/Quantropic.Security.Tests.csproj" Id="1465511b-0b2d-49c9-a095-c06cd7ddf434" />
+  </Folder>
+</Solution>

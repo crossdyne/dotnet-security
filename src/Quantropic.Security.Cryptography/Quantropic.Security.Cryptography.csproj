@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Quantropic.Security.Cryptography</PackageId>
+    <Version>0.2.0-beta.1</Version>
+    <Description>Cryptographic primitives and utilities for Quantropic.Security. Includes secure hashing, encryption, key derivation functions (KDF), and cryptographic helpers with best practices implementation.</Description>
+    <PackageTags>security;cryptography;encryption;hashing;kdf;pbkdf2;argon2;bcrypt;key-derivation;crypto</PackageTags>
+    
+    <RootNamespace>Quantropic.Security.Cryptography</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Quantropic.Security.Abstractions\Quantropic.Security.Abstractions.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Configuration\Quantropic.Security.Configuration.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Utilities\Quantropic.Security.Utilities.csproj" />
+  </ItemGroup>
+
+</Project>

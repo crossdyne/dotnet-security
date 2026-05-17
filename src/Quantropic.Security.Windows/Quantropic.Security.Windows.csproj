@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Quantropic.Security.Windows</PackageId>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <Version>0.2.0-beta.1</Version>
+    <Description>Windows-specific security features for Quantropic.Security. Provides integration with Windows Credential Manager, DPAPI (Data Protection API), Windows Hello, and other platform-specific security mechanisms.</Description>
+    <PackageTags>security;windows;dpapi;credential-manager;windows-hello;platform-specific;windows-authentication;native</PackageTags>
+    
+    <RootNamespace>Quantropic.Security.Windows</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Quantropic.Security.Abstractions\Quantropic.Security.Abstractions.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Management" Version="10.0.2" />
+    <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.2" />
+  </ItemGroup>
+
+</Project>

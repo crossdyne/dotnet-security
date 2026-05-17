@@ -1,0 +1,28 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Quantropic.Security</PackageId>
+    <Version>0.2.0-beta.1</Version>
+    <Description>Meta-package for Quantropic.Security libraries. Installs all security components with a single reference.</Description>
+    <PackageTags>security;srp;cryptography;authentication;meta-package</PackageTags>
+    
+    <RootNamespace>Quantropic.Security</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Quantropic.Security.Abstractions\Quantropic.Security.Abstractions.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Configuration\Quantropic.Security.Configuration.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Cryptography\Quantropic.Security.Cryptography.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Exceptions\Quantropic.Security.Exceptions.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Srp.Client\Quantropic.Security.Srp.Client.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Srp.Server\Quantropic.Security.Srp.Server.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Utilities\Quantropic.Security.Utilities.csproj" />
+    <ProjectReference Include="..\Quantropic.Security.Windows\Quantropic.Security.Windows.csproj" 
+                      Condition="'$(TargetFramework)' == 'net10.0-windows'" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>

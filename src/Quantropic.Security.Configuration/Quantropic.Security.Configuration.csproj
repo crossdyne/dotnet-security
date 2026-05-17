@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Quantropic.Security.Configuration</PackageId>
+    <Version>0.2.0-beta.1</Version>
+    <Description>Cryptographic configuration constants and options for Quantropic.Security libraries. 
+    Provides RFC 5054-compliant SRP parameters (3072-bit prime), AES-GCM settings, 
+    and PBKDF2 key derivation options with built-in validation, fluent builder API, 
+    and secure presets (Default, HighSecurity, Legacy). 
+    Ensures safe defaults and prevents misconfiguration of cryptographic operations.</Description>
+    <PackageTags>security;cryptography;configuration;srp;aes-gcm;pbkdf2;kdf;rfc5054;constants;options;builder</PackageTags>
+    
+    <RootNamespace>Quantropic.Security.Configuration</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Quantropic.Security.Exceptions\Quantropic.Security.Exceptions.csproj" />
+  </ItemGroup>
+
+</Project>
