@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Crossdyne.Security.Utilities</PackageId>
+    <Version>0.3.0-beta.1</Version>
+    <Description>Cryptographic utility library for .NET providing BigInteger extensions, 
+      URL-safe Base64 encoding, and SRP (Secure Remote Password) protocol helpers. 
+      Includes fixed-length big-endian serialization, SHA-256 hashing utilities, 
+      and protocol-specific encoding for secure authentication implementations.</Description>
+    <PackageTags>security;cryptography;srp;secure-remote-password;biginteger;sha256;base64;authentication;utilities;net-standard</PackageTags>
+    
+    <RootNamespace>Crossdyne.Security.Utilities</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crossdyne.Security.Abstractions\Crossdyne.Security.Abstractions.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Configuration\Crossdyne.Security.Configuration.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Crossdyne.Security.Utilities</RootNamespace>
+    <AssemblyName>Crossdyne.Security.Utilities</AssemblyName>
+  </PropertyGroup>
+
+</Project>

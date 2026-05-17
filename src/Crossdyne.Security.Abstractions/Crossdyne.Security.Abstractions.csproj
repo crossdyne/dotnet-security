@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Crossdyne.Security.Abstractions</PackageId>
+    <Version>0.3.0-beta.1</Version>
+    <Description>Core abstractions, interfaces, and base types for Crossdyne.Security library. Provides foundational contracts for security implementations including authentication, cryptography, and SRP protocols.</Description>
+    <PackageTags>security;abstractions;interfaces;authentication;cryptography;srp;core;contracts</PackageTags>
+    
+    <RootNamespace>Crossdyne.Security.Abstractions</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crossdyne.Security.Configuration\Crossdyne.Security.Configuration.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Crossdyne.Security.Abstractions</RootNamespace>
+    <AssemblyName>Crossdyne.Security.Abstractions</AssemblyName>
+  </PropertyGroup>
+
+</Project>

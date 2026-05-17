@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Crossdyne.Security.Srp.Server</PackageId>
+    <Version>0.3.0-beta.1</Version>
+    <Description>Secure Remote Password (SRP-6a) protocol server implementation. Provides secure password verification and session establishment for authentication servers. Includes password verifier storage and multi-step authentication flow.</Description>
+    <PackageTags>security;srp;srp-6a;authentication;server;password-auth;zero-knowledge;proof;secure-login;verifier</PackageTags>
+    
+    <RootNamespace>Crossdyne.Security.Srp.Server</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crossdyne.Security.Abstractions\Crossdyne.Security.Abstractions.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Configuration\Crossdyne.Security.Configuration.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Utilities\Crossdyne.Security.Utilities.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Crossdyne.Security.Srp.Server</RootNamespace>
+    <AssemblyName>Crossdyne.Security.Srp.Server</AssemblyName>
+  </PropertyGroup>
+
+</Project>

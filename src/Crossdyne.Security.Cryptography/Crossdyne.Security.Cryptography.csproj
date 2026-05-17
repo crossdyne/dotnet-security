@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Crossdyne.Security.Cryptography</PackageId>
+    <Version>0.3.0-beta.1</Version>
+    <Description>Cryptographic primitives and utilities for Crossdyne.Security. Includes secure hashing, encryption, key derivation functions (KDF), and cryptographic helpers with best practices implementation.</Description>
+    <PackageTags>security;cryptography;encryption;hashing;kdf;pbkdf2;argon2;bcrypt;key-derivation;crypto</PackageTags>
+    
+    <RootNamespace>Crossdyne.Security.Cryptography</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crossdyne.Security.Abstractions\Crossdyne.Security.Abstractions.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Configuration\Crossdyne.Security.Configuration.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Exceptions\Crossdyne.Security.Exceptions.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Utilities\Crossdyne.Security.Utilities.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Crossdyne.Security.Cryptography</RootNamespace>
+    <AssemblyName>Crossdyne.Security.Cryptography</AssemblyName>
+  </PropertyGroup>
+
+</Project>

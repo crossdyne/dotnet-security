@@ -17,6 +17,7 @@ bld/
 *.user
 *.userosscache
 *.sln.docstates
+*.lscache
 
 # Visual Studio 2015/2017/2019/2022
 *.suo

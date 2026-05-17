@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <PackageId>Crossdyne.Security.Srp.Client</PackageId>
+    <Version>0.3.0-beta.1</Version>
+    <Description>Secure Remote Password (SRP-6a) protocol client implementation. Provides password-based authentication without transmitting passwords over the network. Includes client-side session management and secure credential verification.</Description>
+    <PackageTags>security;srp;srp-6a;authentication;password-auth;client;zero-knowledge;proof;secure-login</PackageTags>
+    
+    <RootNamespace>Crossdyne.Security.Srp.Client</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Crossdyne.Security.Abstractions\Crossdyne.Security.Abstractions.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Cryptography\Crossdyne.Security.Cryptography.csproj" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <RootNamespace>Crossdyne.Security.Srp.Client</RootNamespace>
+    <AssemblyName>Crossdyne.Security.Srp.Client</AssemblyName>
+  </PropertyGroup>
+
+</Project>

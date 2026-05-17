@@ -1,0 +1,52 @@
+using System.Security.Cryptography;
+using Crossdyne.Security.Configuration;
+
+namespace Crossdyne.Security.Abstractions
+{
+    /// <summary>
+    /// Two-stage key derivation: PBKDF2 (master key) → HKDF (sub-keys). Thread-safe.
+    /// </summary>
+    /// <remarks>
+    /// Derived sub-keys: KEK (AES-GCM) and AuthHash (server verification).
+    /// HKDF info strings ensure key separation.
+    /// Salts must be random, unique, and at least 16 bytes.
+    /// Sensitive buffers are cleared after use.
+    /// </remarks>
+    public interface IKeyDerivationService
+    {
+        /// <summary>
+        /// Derives encryption key and authentication hash from a password using default PBKDF2 iterations.
+        /// </summary>
+        /// <param name="login">User Login.</param>
+        /// <param name="password">The password to derive keys from.</param>
+        /// <param name="salt">The salt value for key derivation.</param>
+        /// <returns>A tuple containing the Key Encryption Key (KEK) and authentication hash.</returns>
+        (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt);
+
+        /// <summary>
+        /// Derives encryption key and authentication hash from a password with specified PBKDF2 iterations.
+        /// </summary>
+        /// <param name="login">User Login.</param>
+        /// <param name="password">The password to derive keys from.</param>
+        /// <param name="salt">The salt value for key derivation.</param>
+        /// <param name="pbkdf2Iterations">The number of PBKDF2 iterations. If null, uses default value.</param>
+        /// <returns>A tuple containing the Key Encryption Key (KEK) and authentication hash.</returns>
+        (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, int? pbkdf2Iterations = null);
+
+        /// <summary>
+        /// Derives encryption key and authentication hash from a password with custom crypto options.
+        /// </summary>
+        /// <param name="login">User Login.</param>
+        /// <param name="password">The password to derive keys from.</param>
+        /// <param name="salt">The salt value for key derivation.</param>
+        /// <param name="options">Optional crypto configuration options.</param>
+        /// <returns>A tuple containing the Key Encryption Key (KEK) and authentication hash.</returns>
+        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string login, string password, byte[] salt, KdfOptions? options = null);
+        
+        /// <summary>
+        /// Derives keys specifically for the SRP protocol, ensuring the AuthHash length
+        /// matches the SRP hash algorithm (SHA-256/384/512).
+        /// </summary>
+        byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm,  KdfOptions? options = null);
+    }
+}
