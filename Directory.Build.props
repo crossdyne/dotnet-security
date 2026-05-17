@@ -13,8 +13,8 @@
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
     
     <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Quantropic-Labs/security-dotnet</RepositoryUrl>
-    <PackageProjectUrl>https://github.com/Quantropic-Labs/security-dotnet</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/crossdyne/dotnet-security</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/crossdyne/dotnet-security</PackageProjectUrl>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     
     <IncludeSymbols>true</IncludeSymbols>
