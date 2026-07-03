@@ -21,7 +21,7 @@ namespace Crossdyne.Security.Srp.Client
         /// <param name="B_base64">Server public ephemeral B (URL-safe Base64).</param>
         /// <param name="ctx">SRP context (hash algorithm, N, g, etc.).</param>
         /// <returns>Tuple (A, M1, S) as Base64 strings.</returns>
-        public (string A, string M1, string S) GenerateSrpProof(string login, string password, string saltBase64, string B_base64, SrpContext ctx)    
+        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string B_base64, SrpContext ctx)    
         {
             KeyDerivationService keyDerivationService = new();
 
@@ -31,7 +31,8 @@ namespace Crossdyne.Security.Srp.Client
 
             BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);
 
-            byte[] aBytes = new byte[32];
+            int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
+            byte[] aBytes = new byte[privateKeySize];
             RandomNumberGenerator.Fill(aBytes);
             BigInteger a = new(aBytes, isBigEndian: true, isUnsigned: true);
 
@@ -61,7 +62,7 @@ namespace Crossdyne.Security.Srp.Client
             return (
                 A: Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, A)),
                 M1: Convert.ToBase64String(SrpEncoding.ToHashBytes(ctx, M1)),
-                S: Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, S)));
+                SessionKeyK: sessionKeyK);
         }
 
         /// <summary>
@@ -84,17 +85,14 @@ namespace Crossdyne.Security.Srp.Client
         /// </summary>
         /// <param name="publicA">Client public A (Base64).</param>
         /// <param name="m1">Client proof M1 (Base64).</param>
-        /// <param name="s">Session key S (Base64).</param>
+        /// <param name="sessionKeyK">Session key S (Base64).</param>
         /// <param name="serverM2">Server proof M2 (Base64).</param>
         /// <param name="ctx">SRP context.</param>
         /// <returns>True if the server proof is valid.</returns>
-        public bool VerifyServerM2(string publicA, string m1, string s, string serverM2, SrpContext ctx)
+        public bool VerifyServerM2(string publicA, string m1, byte[] sessionKeyK, string serverM2, SrpContext ctx)
         {
             BigInteger A = BigIntegerUtilities.FromBase64(publicA);
             BigInteger M1 = BigIntegerUtilities.FromBase64(m1);
-            BigInteger S = BigIntegerUtilities.FromBase64(s);
-            
-            byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx ,S);
 
             BigInteger computedM2 = SrpEncoding.ComputeM2(ctx, A, M1, sessionKeyK);
 

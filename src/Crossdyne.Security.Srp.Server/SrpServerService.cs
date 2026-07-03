@@ -22,7 +22,8 @@ namespace Crossdyne.Security.Srp.Server
         {
             BigInteger v = new(verifierBytes, isUnsigned: true, isBigEndian: true);
 
-            byte[] bBytes = new byte[32];
+            int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
+            byte[] bBytes = new byte[privateKeySize];
             RandomNumberGenerator.Fill(bBytes);
             BigInteger b = new(bBytes, isUnsigned: true, isBigEndian: true);
 
