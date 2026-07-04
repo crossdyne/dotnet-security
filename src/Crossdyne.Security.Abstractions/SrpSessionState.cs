@@ -11,17 +11,17 @@ namespace Crossdyne.Security.Abstractions
     public sealed class SrpSessionState : IDisposable
     {
         /// <summary>
-        /// Логин пользователя
+        /// User login
         /// </summary>
         public string Login { get; }
         
-        /// <summary>Серверный эфемерный секрет b. Требует явного стирания.</summary>
+        /// <summary>Server ephemeral secret b. Requires explicit erasure.</summary>
         public byte[] PrivateKeyB { get; }
         
-        /// <summary>SRP-верификатор v (публичный, но бинарный).</summary>
+        /// <summary>SRP verifier v (public, but binary).</summary>
         public ReadOnlyMemory<byte> Verifier { get; }
         
-        /// <summary>Публичный эфемерный ключ B.</summary>
+        /// <summary>Public ephemeral key B</summary>
         public ReadOnlyMemory<byte> PublicKeyB { get; }
 
         /// <param name="login">The user's login identifier (username/email)</param>
@@ -37,7 +37,7 @@ namespace Crossdyne.Security.Abstractions
         }
 
         /// <summary>
-        /// Очистка
+        /// Resource cleaning
         /// </summary>
         public void Dispose()
         {
