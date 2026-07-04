@@ -24,7 +24,7 @@ namespace Crossdyne.Security.Configuration
         public BigInteger N => SrpGroupParams.GetN(Group);
 
         /// <summary>Generator g for the selected group (2, 5, or 19).</summary>
-        public int G => (int)SrpGroupParams.GetG(Group);
+        public BigInteger  G => SrpGroupParams.GetG(Group);
 
         /// <summary>Byte length of N (ceil(bitLength / 8)).</summary>
         public int ModulusSize => (int)((N.GetBitLength() + 7) / 8);
@@ -38,7 +38,7 @@ namespace Crossdyne.Security.Configuration
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName);
             
             byte[] nBytes = ToFixedLengthBytes(N, ModulusSize);
-            byte[] gBytes = ToFixedLengthBytes(new BigInteger(G), ModulusSize);
+            byte[] gBytes = ToFixedLengthBytes(G, ModulusSize);
 
             var ngBytes = Concat(nBytes, gBytes);
             hash.AppendData(ngBytes);
