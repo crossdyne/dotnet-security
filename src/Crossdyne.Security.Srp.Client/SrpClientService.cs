@@ -37,7 +37,10 @@ namespace Crossdyne.Security.Srp.Client
 
             BigInteger A = BigInteger.ModPow(ctx.G, a, ctx.N);
 
-            byte[] B_bytes = Convert.FromBase64String(B_base64);
+            if (A == 0)
+                throw new SecurityException("Invalid client public key A (Zero-Key Attack).");
+
+            byte[] B_bytes = BigIntegerUtilities.DecodeBase64ToBytes(B_base64);
             BigInteger B = new(B_bytes, isBigEndian: true, isUnsigned: true);
 
             if (B % ctx.N == 0)
@@ -56,7 +59,7 @@ namespace Crossdyne.Security.Srp.Client
 
             byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
 
-           byte[] m1Bytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK, login, salt); 
+            byte[] m1Bytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK, login, salt); 
 
             return (
                 A: Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, A)),
@@ -91,10 +94,10 @@ namespace Crossdyne.Security.Srp.Client
         public bool VerifyServerM2(string publicA, string m1, byte[] sessionKeyK, string serverM2, SrpContext ctx)
         {
             BigInteger A = BigIntegerUtilities.FromBase64(publicA);
-            byte[] m1Bytes = Convert.FromBase64String(m1);
+            byte[] m1Bytes = BigIntegerUtilities.DecodeBase64ToBytes(m1);
 
             byte[] computedM2Bytes = SrpEncoding.ComputeM2(ctx, A, m1Bytes, sessionKeyK);;
-            byte[] serverM2Bytes = Convert.FromBase64String(serverM2);
+            byte[] serverM2Bytes = BigIntegerUtilities.DecodeBase64ToBytes(serverM2);
 
             return CryptographicOperations.FixedTimeEquals(computedM2Bytes, serverM2Bytes);
         }

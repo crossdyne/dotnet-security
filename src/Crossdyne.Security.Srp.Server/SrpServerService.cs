@@ -27,12 +27,17 @@ namespace Crossdyne.Security.Srp.Server
             BigInteger v = new(verifierBytes, isUnsigned: true, isBigEndian: true);
 
             int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
-            byte[] bBytes = new byte[privateKeySize];
-            RandomNumberGenerator.Fill(bBytes);
-            BigInteger b = new(bBytes, isUnsigned: true, isBigEndian: true);
+            byte[] bBytes;
+            BigInteger B;
+            do
+            {
+                bBytes = new byte[privateKeySize];
+                RandomNumberGenerator.Fill(bBytes);
+                BigInteger b = new(bBytes, isUnsigned: true, isBigEndian: true);
 
-            BigInteger gB = BigInteger.ModPow(ctx.G, b, ctx.N);
-            BigInteger B = (ctx.K * v + gB) % ctx.N;
+                BigInteger gB = BigInteger.ModPow(ctx.G, b, ctx.N);
+                B = (ctx.K * v + gB) % ctx.N;
+            } while (B == 0);
 
             var session = new SrpSessionState(
                 login,
