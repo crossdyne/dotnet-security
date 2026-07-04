@@ -58,8 +58,8 @@ namespace Crossdyne.Security.Srp.Server
         {
             BigInteger A = new(Convert.FromBase64String(a), isUnsigned: true, isBigEndian: true);
             BigInteger b = new(sessionState.PrivateKeyB, isUnsigned: true, isBigEndian: true);
-            BigInteger v = new(sessionState.Verifier.Span, isUnsigned: true, isBigEndian: true);
-            BigInteger B = new(sessionState.PublicKeyB.Span, isUnsigned: true, isBigEndian: true);
+            BigInteger v = new(sessionState.Verifier, isUnsigned: true, isBigEndian: true);
+            BigInteger B = new(sessionState.PublicKeyB, isUnsigned: true, isBigEndian: true);
 
             if (v <= 0)
                 throw new SrpVerificationException("The verifier is corrupted");
@@ -80,7 +80,7 @@ namespace Crossdyne.Security.Srp.Server
 
             byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
 
-            byte[] m1ServerBytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK, sessionState.Login, sessionState.Salt.Span.ToArray());
+            byte[] m1ServerBytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK, sessionState.Login, sessionState.Salt);
             byte[] m1ClientBytes = Convert.FromBase64String(m1);
             
              if (!CryptographicOperations.FixedTimeEquals(m1ServerBytes, m1ClientBytes))

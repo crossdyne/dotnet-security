@@ -19,20 +19,20 @@ namespace Crossdyne.Security.Abstractions
         public byte[] PrivateKeyB { get; }
         
         /// <summary>SRP verifier v (public, but binary).</summary>
-        public ReadOnlyMemory<byte> Verifier { get; }
+        public byte[] Verifier { get; }
         
         /// <summary>Public ephemeral key B</summary>
-        public ReadOnlyMemory<byte> PublicKeyB { get; }
+        public byte[] PublicKeyB { get; }
 
         /// <summary>User salt s (needed for RFC 5054 M1).</summary>
-        public ReadOnlyMemory<byte> Salt { get; }
+        public byte[] Salt { get; }
 
         /// <param name="login">The user's login identifier (username/email)</param>
         /// <param name="privateKeyB">The server's ephemeral private key (b) - keep secure, never sent to client</param>
         /// <param name="verifier">The user's verifier (v) retrieved from the database</param>
         /// <param name="publicKeyB">The server's ephemeral public key (B) sent to the client</param>
         /// <param name="salt">Authentication hash generated during registration</param>
-        public SrpSessionState(string login, byte[] privateKeyB, ReadOnlyMemory<byte> verifier, ReadOnlyMemory<byte> publicKeyB, ReadOnlyMemory<byte> salt)
+        public SrpSessionState(string login, byte[] privateKeyB, byte[] verifier, byte[] publicKeyB, byte[] salt)
         {
             Login = login;
             PrivateKeyB = privateKeyB;
