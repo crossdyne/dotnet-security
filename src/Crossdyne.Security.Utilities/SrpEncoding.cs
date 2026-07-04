@@ -69,7 +69,7 @@ namespace Crossdyne.Security.Utilities
         /// <param name="S">Shared secret.</param>
         public static byte[] ComputeSessionKey(SrpContext ctx, BigInteger S)
         {
-            byte[] sBytes = ToModulusBytes(ctx, S);
+            byte[] sBytes = S.ToByteArray(isUnsigned: true, isBigEndian: true);
             return BigIntegerUtilities.ComputeHash(ctx.HashAlgorithmName, sBytes);
         }
     }
