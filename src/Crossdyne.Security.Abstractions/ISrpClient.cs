@@ -30,7 +30,7 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="ctx">SRP context.</param>
         /// <param name="A">Client public A (Base64).</param>
         /// <param name="M1">Client proof M1 (Base64).</param>
-        /// <param name="S">Session key S (Base64).</param>
+        /// <param name="SessionKeyK">Session key (Base64).</param>
         /// <param name="ServerM2">Server proof M2 (Base64).</param>
         /// <returns>True if server proof is valid.</returns>
         bool VerifyServerM2(string A, string M1, byte[] SessionKeyK, string ServerM2, SrpContext ctx);

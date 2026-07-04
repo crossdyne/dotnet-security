@@ -17,6 +17,7 @@ namespace Crossdyne.Security.Srp.Server
         /// <param name="login">User login.</param>
         /// <param name="verifierBytes">Stored verifier v as byte array.</param>
         /// <param name="ctx">SRP context (hash, N, g, etc.).</param>
+        /// <param name="salt">Authentication hash generated during registration</param>
         /// <returns><see cref="SrpSessionState"/> with private b, verifier, and public B.</returns>
         public SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, byte[] salt, SrpContext ctx)
         {
