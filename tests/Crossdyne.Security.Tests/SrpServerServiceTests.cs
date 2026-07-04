@@ -47,9 +47,9 @@ namespace Crossdyne.Security.Tests
 
             return new SrpSessionState(
                 TestLogin,
-                Convert.ToBase64String(bBytes),
-                Convert.ToBase64String(verifierBytes),
-                Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B))
+                bBytes,
+                verifierBytes,
+                SrpEncoding.ToModulusBytes(context, B)
             );
         }
 
@@ -79,12 +79,10 @@ namespace Crossdyne.Security.Tests
             // Assert
             Assert.Equal(TestLogin, session.Login);
             Assert.NotNull(session.PrivateKeyB);
-            Assert.NotNull(session.Verifier);
-            Assert.NotNull(session.PublicKeyB);
             
-            var bBytes = Convert.FromBase64String(session.PrivateKeyB);
-            var vBytes = Convert.FromBase64String(session.Verifier);
-            var BBytes = Convert.FromBase64String(session.PublicKeyB);
+            var bBytes = session.PrivateKeyB;
+            var vBytes = session.Verifier;
+            var BBytes = session.PublicKeyB;
             
             var expectedPrivateKeySize = Math.Max(32, context.ModulusSize / 2);
             Assert.Equal(expectedPrivateKeySize, bBytes.Length);
@@ -135,7 +133,6 @@ namespace Crossdyne.Security.Tests
 
             // Assert: Should not throw, but produces insecure state
             Assert.NotNull(session);
-            Assert.NotNull(session.PublicKeyB);
         }
 
         #endregion
@@ -203,7 +200,7 @@ namespace Crossdyne.Security.Tests
             session = new SrpSessionState(
                 session.Login,
                 session.PrivateKeyB,
-                Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, zeroV)),
+                SrpEncoding.ToModulusBytes(context, zeroV),
                 session.PublicKeyB
             );
             
@@ -338,7 +335,7 @@ namespace Crossdyne.Security.Tests
             // Act: Generate challenge and verify B has correct length
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = _server.GetSrpChallenge(TestLogin, verifierBytes, context);
-            var BBytes = Convert.FromBase64String(session.PublicKeyB);
+            var BBytes = session.PublicKeyB;
 
             Assert.Equal(context.ModulusSize, BBytes.Length);
         }
@@ -391,7 +388,7 @@ namespace Crossdyne.Security.Tests
  
             var session = _server.GetSrpChallenge(TestLogin, largeVerifierBytes, context);
 
-            var BBytes = Convert.FromBase64String(session.PublicKeyB);
+            var BBytes = session.PublicKeyB;
             Assert.Equal(context.ModulusSize, BBytes.Length);
         }
 

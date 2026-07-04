@@ -20,6 +20,9 @@ namespace Crossdyne.Security.Srp.Server
         /// <returns><see cref="SrpSessionState"/> with private b, verifier, and public B.</returns>
         public SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, SrpContext ctx)
         {
+            ArgumentNullException.ThrowIfNull(verifierBytes);
+            ArgumentException.ThrowIfNullOrEmpty(login);
+
             BigInteger v = new(verifierBytes, isUnsigned: true, isBigEndian: true);
 
             int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
@@ -32,9 +35,9 @@ namespace Crossdyne.Security.Srp.Server
 
             var session = new SrpSessionState(
                 login,
-                Convert.ToBase64String(bBytes),
-                Convert.ToBase64String(verifierBytes),
-                Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, B))
+                bBytes,
+                verifierBytes,
+                SrpEncoding.ToModulusBytes(ctx, B)
             );
 
             return session;
@@ -52,10 +55,9 @@ namespace Crossdyne.Security.Srp.Server
         public string VerifySrpProof(SrpSessionState sessionState, string a, string m1, SrpContext ctx)
         {
             BigInteger A = new(Convert.FromBase64String(a), isUnsigned: true, isBigEndian: true);
-            BigInteger M1_client = new(Convert.FromBase64String(m1), isUnsigned: true, isBigEndian: true);
-            BigInteger b = new(Convert.FromBase64String(sessionState!.PrivateKeyB), isUnsigned: true, isBigEndian: true);
-            BigInteger v = new(Convert.FromBase64String(sessionState.Verifier), isUnsigned: true, isBigEndian: true);
-            BigInteger B = new(Convert.FromBase64String(sessionState.PublicKeyB), isUnsigned: true, isBigEndian: true);
+            BigInteger b = new(sessionState.PrivateKeyB, isUnsigned: true, isBigEndian: true);
+            BigInteger v = new(sessionState.Verifier.Span, isUnsigned: true, isBigEndian: true);
+            BigInteger B = new(sessionState.PublicKeyB.Span, isUnsigned: true, isBigEndian: true);
 
             if (v <= 0)
                 throw new SrpVerificationException("The verifier is corrupted");

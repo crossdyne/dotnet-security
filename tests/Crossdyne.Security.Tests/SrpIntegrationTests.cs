@@ -47,7 +47,7 @@ namespace Crossdyne.Security.Tests
 
             // === PHASE 3: Client Proof Generation ===
             // Было: var (A, M1, S) = _client.GenerateSrpProof(...)
-            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, B_base64, context);
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, Convert.ToBase64String(B_base64.Span), context);
 
             // === PHASE 4: Server Verification ===
             var M2 = _server.VerifySrpProof(challenge, A, M1, context);
@@ -78,7 +78,7 @@ namespace Crossdyne.Security.Tests
             var wrongPassword = "WrongP@ssw0rd!";
             var exception = Record.Exception(() =>
             {
-                var (A, M1, _) = _client.GenerateSrpProof(TestLogin, wrongPassword, saltBase64, challenge.PublicKeyB, context);
+                var (A, M1, _) = _client.GenerateSrpProof(TestLogin, wrongPassword, saltBase64, Convert.ToBase64String(challenge.PublicKeyB.Span), context);
                 _server.VerifySrpProof(challenge, A, M1, context); // Should throw
             });
 
@@ -101,7 +101,7 @@ namespace Crossdyne.Security.Tests
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
             // === Tamper with B (server's public value) ===
-            var B_bytes = Convert.FromBase64String(challenge.PublicKeyB);
+            var B_bytes = Convert.FromBase64String(Convert.ToBase64String(challenge.PublicKeyB.Span));
             B_bytes[0] ^= 0xFF; // Flip one bit
             var tamperedB = Convert.ToBase64String(B_bytes);
 
@@ -133,7 +133,7 @@ namespace Crossdyne.Security.Tests
                 var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
                 
                 // Client proof
-                var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB, context);
+                var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, Convert.ToBase64String(challenge.PublicKeyB.Span), context);
                 
                 // Server verification
                 var M2 = _server.VerifySrpProof(challenge, A, M1, context);
@@ -157,7 +157,7 @@ namespace Crossdyne.Security.Tests
             var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
                         
-            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB, context);
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, Convert.ToBase64String(challenge.PublicKeyB.Span), context);
             var M2 = _server.VerifySrpProof(challenge, A, M1, context);
             var authenticated = _client.VerifyServerM2(A, M1, sessionKeyK, M2, context);
             
@@ -195,7 +195,7 @@ namespace Crossdyne.Security.Tests
                 tasks[i] = Task.Run(() =>
                 {
                     var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
-                    var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB, context);
+                    var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, Convert.ToBase64String(challenge.PublicKeyB.Span), context);
                     var M2 = _server.VerifySrpProof(challenge, A, M1, context);
                     return _client.VerifyServerM2(A, M1, S, M2, context);
                 });
