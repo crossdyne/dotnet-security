@@ -76,17 +76,15 @@ namespace Crossdyne.Security.Srp.Server
 
             byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
 
-            BigInteger M1_server = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK);
-            
-            byte[] m1ServerBytes = SrpEncoding.ToHashBytes(ctx, M1_server);
-            byte[] m1ClientBytes = SrpEncoding.ToHashBytes(ctx, M1_client);
+            byte[] m1ServerBytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK);
+            byte[] m1ClientBytes = Convert.FromBase64String(m1);
             
              if (!CryptographicOperations.FixedTimeEquals(m1ServerBytes, m1ClientBytes))
                 throw new SrpVerificationException("Invalid password");
 
-            BigInteger M2_server = SrpEncoding.ComputeM2(ctx, A, M1_client, sessionKeyK);
+             byte[] m2ServerBytes = SrpEncoding.ComputeM2(ctx, A, m1ClientBytes, sessionKeyK);
 
-            return Convert.ToBase64String(SrpEncoding.ToHashBytes(ctx, M2_server));
+            return Convert.ToBase64String(m2ServerBytes);
         }
     }
 }

@@ -50,8 +50,8 @@ namespace Crossdyne.Security.Utilities
         /// <param name="A">Client ephemeral public key.</param>
         /// <param name="B">Server ephemeral public key.</param>
         /// <param name="sessionKeyK">Session key bytes.</param>
-        public static BigInteger ComputeM1(SrpContext ctx, BigInteger A, BigInteger B, byte[] sessionKeyK) =>
-        BigIntegerUtilities.Hash(
+        public static byte[] ComputeM1(SrpContext ctx, BigInteger A, BigInteger B, byte[] sessionKeyK) =>
+        BigIntegerUtilities.ComputeHash(
             ctx.HashAlgorithmName,
             ToModulusBytes(ctx, A),
             ToModulusBytes(ctx, B),
@@ -63,13 +63,13 @@ namespace Crossdyne.Security.Utilities
         /// </summary>
         /// <param name="ctx">SRP context.</param>
         /// <param name="A">Client ephemeral public key.</param>
-        /// <param name="M1">Client proof.</param>
+        /// <param name="M1_Bytes">Client proof.</param>
         /// <param name="sessionKeyK">Session key bytes.</param>
-        public static BigInteger ComputeM2(SrpContext ctx, BigInteger A, BigInteger M1, byte[] sessionKeyK) =>
-        BigIntegerUtilities.Hash(
+        public static byte[] ComputeM2(SrpContext ctx, BigInteger A, byte[] M1_Bytes, byte[] sessionKeyK) =>
+        BigIntegerUtilities.ComputeHash(
             ctx.HashAlgorithmName,
             ToModulusBytes(ctx, A),
-            ToHashBytes(ctx, M1),
+            M1_Bytes,
             sessionKeyK
         );
 

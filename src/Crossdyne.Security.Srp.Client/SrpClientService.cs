@@ -57,11 +57,11 @@ namespace Crossdyne.Security.Srp.Client
 
             byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
 
-            BigInteger M1 = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK); 
+           byte[] m1Bytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK); 
 
             return (
                 A: Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, A)),
-                M1: Convert.ToBase64String(SrpEncoding.ToHashBytes(ctx, M1)),
+                M1: Convert.ToBase64String(m1Bytes),
                 SessionKeyK: sessionKeyK);
         }
 
@@ -92,11 +92,9 @@ namespace Crossdyne.Security.Srp.Client
         public bool VerifyServerM2(string publicA, string m1, byte[] sessionKeyK, string serverM2, SrpContext ctx)
         {
             BigInteger A = BigIntegerUtilities.FromBase64(publicA);
-            BigInteger M1 = BigIntegerUtilities.FromBase64(m1);
+            byte[] m1Bytes = Convert.FromBase64String(m1);
 
-            BigInteger computedM2 = SrpEncoding.ComputeM2(ctx, A, M1, sessionKeyK);
-
-            byte[] computedM2Bytes = SrpEncoding.ToHashBytes(ctx, computedM2);
+            byte[] computedM2Bytes = SrpEncoding.ComputeM2(ctx, A, m1Bytes, sessionKeyK);;
             byte[] serverM2Bytes = Convert.FromBase64String(serverM2);
 
             return CryptographicOperations.FixedTimeEquals(computedM2Bytes, serverM2Bytes);

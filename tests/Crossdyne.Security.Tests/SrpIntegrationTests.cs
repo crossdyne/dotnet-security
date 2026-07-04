@@ -34,39 +34,31 @@ namespace Crossdyne.Security.Tests
         public void FullSrpFlow_ValidCredentials_AuthenticationSucceeds()
         {
             // === PHASE 1: Registration ===
-            // Client: Derive auth hash and generate verifier
             var context = SrpHelper.GetSrpContext();
             var authHash = _kdf.DeriveAuthHashForSrp(TestLogin, TestPassword, _salt, context.HashAlgorithmName);
             var verifierBase64 = _client.GenerateSrpVerifier(Convert.ToBase64String(authHash), context);
             var verifierBytes = Convert.FromBase64String(verifierBase64);
-            
-            // Server: Store verifier (simulated)
             var storedVerifier = verifierBytes;
 
             // === PHASE 2: Authentication Challenge ===
-            // Server: Generate challenge
             var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
             var B_base64 = challenge.PublicKeyB;
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
             // === PHASE 3: Client Proof Generation ===
-            // Client: Generate A, M1, S
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, B_base64, context);
+            // Было: var (A, M1, S) = _client.GenerateSrpProof(...)
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, B_base64, context);
 
             // === PHASE 4: Server Verification ===
-            // Server: Verify M1 and generate M2
             var M2 = _server.VerifySrpProof(challenge, A, M1, context);
 
             // === PHASE 5: Client Server Authentication ===
-            // Client: Verify M2
-            var serverAuthenticated = _client.VerifyServerM2(A, M1, S, M2, context);
+            var serverAuthenticated = _client.VerifyServerM2(A, M1, sessionKeyK, M2, context);
 
             // === ASSERTIONS ===
             Assert.True(serverAuthenticated, "Server authentication should succeed with valid credentials");
-            
-            // Session key S should be usable for further encryption
-            var sessionKeyBytes = Convert.FromBase64String(S);
-            Assert.Equal(context.ModulusSize, sessionKeyBytes.Length);
+
+            Assert.Equal(context.HashSize, sessionKeyK.Length);
         }
 
         [Fact]
@@ -164,10 +156,10 @@ namespace Crossdyne.Security.Tests
             
             var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
-            
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB, context);
+                        
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, challenge.PublicKeyB, context);
             var M2 = _server.VerifySrpProof(challenge, A, M1, context);
-            var authenticated = _client.VerifyServerM2(A, M1, S, M2, context);
+            var authenticated = _client.VerifyServerM2(A, M1, sessionKeyK, M2, context);
             
             Assert.True(authenticated);
 
@@ -175,9 +167,8 @@ namespace Crossdyne.Security.Tests
             var cryptoService = new CryptoService();
             
             // Derive AES key from SRP session key (simplified: take first 32 bytes)
-            var S_bytes = Convert.FromBase64String(S);
             var aesKey = new byte[SecurityConstants.KeySizeBytes];
-            Array.Copy(S_bytes, aesKey, SecurityConstants.KeySizeBytes);
+            Buffer.BlockCopy(sessionKeyK, 0, aesKey, 0, Math.Min(sessionKeyK.Length, aesKey.Length));
             
             // Encrypt and decrypt test message
             const string secretMessage = "Confidential SRP-protected data 🔐";

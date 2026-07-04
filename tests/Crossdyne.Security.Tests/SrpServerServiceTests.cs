@@ -53,7 +53,7 @@ namespace Crossdyne.Security.Tests
             );
         }
 
-        private (string A, string M1, string S) GenerateValidClientProof(string login, string password, byte[] salt, BigInteger B)
+        private (string A, string M1, byte[] sessionKeyK) GenerateValidClientProof(string login, string password, byte[] salt, BigInteger B)
         {
             var context = SrpHelper.GetSrpContext();
             var client = new Srp.Client.SrpClientService();
@@ -82,12 +82,13 @@ namespace Crossdyne.Security.Tests
             Assert.NotNull(session.Verifier);
             Assert.NotNull(session.PublicKeyB);
             
-            // Should be valid Base64
             var bBytes = Convert.FromBase64String(session.PrivateKeyB);
             var vBytes = Convert.FromBase64String(session.Verifier);
             var BBytes = Convert.FromBase64String(session.PublicKeyB);
             
-            Assert.Equal(32, bBytes.Length);
+            var expectedPrivateKeySize = Math.Max(32, context.ModulusSize / 2);
+            Assert.Equal(expectedPrivateKeySize, bBytes.Length);
+            
             Assert.Equal(context.ModulusSize, vBytes.Length);
             Assert.Equal(context.ModulusSize, BBytes.Length);
         }
@@ -148,7 +149,7 @@ namespace Crossdyne.Security.Tests
             var context = SrpHelper.GetSrpContext();
             var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
             var session = CreateValidSession(verifierBytes, out _, out var B);
-            var (A, M1, S) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
+            var (A, M1, SessionKey) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
 
             // Act
             var M2 = _server.VerifySrpProof(session, A, M1, context);
