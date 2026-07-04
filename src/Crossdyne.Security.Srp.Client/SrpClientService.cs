@@ -26,7 +26,8 @@ namespace Crossdyne.Security.Srp.Client
             KeyDerivationService keyDerivationService = new();
 
             byte[] salt = BigIntegerUtilities.DecodeBase64ToBytes(saltBase64);
-            byte[] authHashBytes = keyDerivationService.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName);
+            string normalizedLogin = login.Trim().ToLowerInvariant();
+            byte[] authHashBytes = keyDerivationService.DeriveAuthHashForSrp(normalizedLogin, password, salt, ctx.HashAlgorithmName);
 
             BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);
 
@@ -56,7 +57,7 @@ namespace Crossdyne.Security.Srp.Client
 
             byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
 
-           byte[] m1Bytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK); 
+           byte[] m1Bytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK, normalizedLogin, salt); 
 
             return (
                 A: Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, A)),

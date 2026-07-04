@@ -18,7 +18,7 @@ namespace Crossdyne.Security.Srp.Server
         /// <param name="verifierBytes">Stored verifier v as byte array.</param>
         /// <param name="ctx">SRP context (hash, N, g, etc.).</param>
         /// <returns><see cref="SrpSessionState"/> with private b, verifier, and public B.</returns>
-        public SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, SrpContext ctx)
+        public SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, byte[] salt, SrpContext ctx)
         {
             ArgumentNullException.ThrowIfNull(verifierBytes);
             ArgumentException.ThrowIfNullOrEmpty(login);
@@ -37,7 +37,8 @@ namespace Crossdyne.Security.Srp.Server
                 login,
                 bBytes,
                 verifierBytes,
-                SrpEncoding.ToModulusBytes(ctx, B)
+                SrpEncoding.ToModulusBytes(ctx, B),
+                salt
             );
 
             return session;
@@ -78,7 +79,7 @@ namespace Crossdyne.Security.Srp.Server
 
             byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
 
-            byte[] m1ServerBytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK);
+            byte[] m1ServerBytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK, sessionState.Login, sessionState.Salt.Span.ToArray());
             byte[] m1ClientBytes = Convert.FromBase64String(m1);
             
              if (!CryptographicOperations.FixedTimeEquals(m1ServerBytes, m1ClientBytes))

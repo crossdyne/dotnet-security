@@ -1,6 +1,4 @@
-using System.Numerics;
 using System.Security.Cryptography;
-using Crossdyne.Security.Abstractions;
 using Crossdyne.Security.Configuration;
 using Crossdyne.Security.Cryptography;
 using Crossdyne.Security.Srp.Client;
@@ -41,7 +39,7 @@ namespace Crossdyne.Security.Tests
             var storedVerifier = verifierBytes;
 
             // === PHASE 2: Authentication Challenge ===
-            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
+            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, _salt,context);
             var B_base64 = challenge.PublicKeyB;
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
@@ -71,7 +69,7 @@ namespace Crossdyne.Security.Tests
             var storedVerifier = Convert.FromBase64String(verifierBase64);
 
             // === Challenge ===
-            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
+            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, _salt, context);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
             // === Client attempts with WRONG password ===
@@ -97,7 +95,7 @@ namespace Crossdyne.Security.Tests
             var storedVerifier = Convert.FromBase64String(verifierBase64);
 
             // === Challenge ===
-            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
+            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, _salt, context);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
 
             // === Tamper with B (server's public value) ===
@@ -130,7 +128,7 @@ namespace Crossdyne.Security.Tests
             for (int i = 0; i < 5; i++)
             {
                 // Server challenge (new random B each time)
-                var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
+                var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, _salt, context);
                 
                 // Client proof
                 var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, Convert.ToBase64String(challenge.PublicKeyB.Span), context);
@@ -154,7 +152,7 @@ namespace Crossdyne.Security.Tests
             var verifierBase64 = _client.GenerateSrpVerifier(Convert.ToBase64String(authHash), context);
             var storedVerifier = Convert.FromBase64String(verifierBase64);
             
-            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
+            var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, _salt, context);
             var saltBase64 = Convert.ToBase64String(_salt).Replace('+', '-').Replace('/', '_');
                         
             var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, Convert.ToBase64String(challenge.PublicKeyB.Span), context);
@@ -194,7 +192,7 @@ namespace Crossdyne.Security.Tests
             {
                 tasks[i] = Task.Run(() =>
                 {
-                    var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, context);
+                    var challenge = _server.GetSrpChallenge(TestLogin, storedVerifier, _salt, context);
                     var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64, Convert.ToBase64String(challenge.PublicKeyB.Span), context);
                     var M2 = _server.VerifySrpProof(challenge, A, M1, context);
                     return _client.VerifyServerM2(A, M1, S, M2, context);
