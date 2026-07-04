@@ -75,9 +75,8 @@ namespace Crossdyne.Security.Cryptography
                 
             var opts = options ?? KdfOptions.Default;
             opts.Validate();
-            
-            string normalizedIdentity = identity.Trim().ToLowerInvariant();
-            string combinedPassword = $"{normalizedIdentity}:{password}";
+
+            string combinedPassword = $"{identity}:{password}";
 
             byte[]? masterKey = null;
 
@@ -135,8 +134,7 @@ namespace Crossdyne.Security.Cryptography
                 _ => throw new ArgumentException($"Unsupported hash algorithm for SRP: {srpHashAlgorithm.Name}", nameof(srpHashAlgorithm))
             };
 
-            string normalizedIdentity = identity.Trim().ToLowerInvariant();
-            string combinedPassword = $"{normalizedIdentity}:{password}";
+            string combinedPassword = $"{identity}:{password}";
 
             byte[]? masterKey = null;
 
