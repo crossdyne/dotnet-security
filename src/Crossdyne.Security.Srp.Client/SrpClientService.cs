@@ -25,8 +25,7 @@ namespace Crossdyne.Security.Srp.Client
         {
             KeyDerivationService keyDerivationService = new();
 
-            string cleanSalt = saltBase64.Replace('-', '+').Replace('_', '/');
-            byte[] salt = Convert.FromBase64String(cleanSalt);
+            byte[] salt = BigIntegerUtilities.DecodeBase64ToBytes(saltBase64);
             byte[] authHashBytes = keyDerivationService.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName);
 
             BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);

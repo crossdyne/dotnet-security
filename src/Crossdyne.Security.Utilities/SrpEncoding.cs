@@ -33,17 +33,6 @@ namespace Crossdyne.Security.Utilities
             BigIntegerUtilities.Hash(ctx.HashAlgorithmName, values.Select(v => ToModulusBytes(ctx, v)).ToArray());
 
         /// <summary>
-        /// Hashes mixed <see cref="BigInteger"/> values serialized as modulus-sized.
-        /// </summary>
-        /// <param name="ctx">SRP context.</param>
-        /// <param name="values">Values to hash.</param>
-        public static BigInteger HashMixed(SrpContext ctx, params BigInteger[] values)
-        {
-            var buffers = values.Select(v => ToModulusBytes(ctx, v)).ToArray();
-            return BigIntegerUtilities.Hash(ctx.HashAlgorithmName, buffers);
-        }
-
-        /// <summary>
         /// Computes M1 = H(A || B || sessionKeyK).
         /// </summary>
         /// <param name="ctx">SRP context.</param>
