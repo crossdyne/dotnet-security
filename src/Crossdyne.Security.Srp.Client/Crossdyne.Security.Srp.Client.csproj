@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Srp.Client</PackageId>
-    <Version>0.3.0-beta.1</Version>
+    <Version>0.4.0-beta.1</Version>
     <Description>Secure Remote Password (SRP-6a) protocol client implementation. Provides password-based authentication without transmitting passwords over the network. Includes client-side session management and secure credential verification.</Description>
     <PackageTags>security;srp;srp-6a;authentication;password-auth;client;zero-knowledge;proof;secure-login</PackageTags>
     
