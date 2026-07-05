@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Windows</PackageId>
     <TargetFramework>net10.0-windows</TargetFramework>
-    <Version>0.3.0-beta.1</Version>
+    <Version>0.4.0-beta.1</Version>
     <Description>Windows-specific security features for Crossdyne.Security. Provides integration with Windows Credential Manager, DPAPI (Data Protection API), Windows Hello, and other platform-specific security mechanisms.</Description>
     <PackageTags>security;windows;dpapi;credential-manager;windows-hello;platform-specific;windows-authentication;native</PackageTags>
     
