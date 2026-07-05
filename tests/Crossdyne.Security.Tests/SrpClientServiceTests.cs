@@ -55,27 +55,25 @@ namespace Crossdyne.Security.Tests
             var context = SrpHelper.GetSrpContext();
             var (_, authHashBytes, x) = DeriveAuthComponents(TestLogin, TestPassword, _testSalt);
             var v = BigInteger.ModPow(context.G, x, context.N);
-            var bBytes = RandomNumberGenerator.GetBytes(32);
+
+            var bKeySize = Math.Max(32, context.ModulusSize / 2);
+            var bBytes = RandomNumberGenerator.GetBytes(bKeySize);
             var B = GenerateValidB(v, bBytes);
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
 
             // Act
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
 
             // Assert
             Assert.NotNull(A);
             Assert.NotNull(M1);
-            Assert.NotNull(S);
-            
-            // Should be valid Base64
+            Assert.NotNull(sessionKeyK);
+
             var aBytes = Convert.FromBase64String(A);
             var m1Bytes = Convert.FromBase64String(M1);
-            var sBytes = Convert.FromBase64String(S);
-            
-            // Should have expected lengths
             Assert.Equal(context.ModulusSize, aBytes.Length);
-            Assert.Equal(context.HashSize, m1Bytes.Length); // SHA-256 hash
-            Assert.Equal(context.ModulusSize, sBytes.Length);
+            Assert.Equal(context.HashSize, m1Bytes.Length);
+            Assert.Equal(context.HashSize, sessionKeyK.Length);
         }
 
         [Fact]
@@ -217,18 +215,14 @@ namespace Crossdyne.Security.Tests
             var B = GenerateValidB(v, bBytes);
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
             
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
-            
-            // Compute expected M2 manually (same as server would)
-            var A_big = BigIntegerUtilities.FromBase64(A);
-            var M1_big = BigIntegerUtilities.FromBase64(M1);
-            var S_big = BigIntegerUtilities.FromBase64(S);
-            var sessionKeyK = SrpEncoding.ComputeSessionKey(context, S_big);
-            var expectedM2 = SrpEncoding.ComputeM2(context, A_big, M1_big, sessionKeyK);
-            var expectedM2Base64 = Convert.ToBase64String(SrpEncoding.ToHashBytes(context, expectedM2));
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
 
-            // Act
-            var result = _client.VerifyServerM2(A, M1, S, expectedM2Base64, context);
+            var A_big = BigIntegerUtilities.FromBase64(A);
+            var M1_bytes = Convert.FromBase64String(M1); // M1 теперь base64 от byte[]
+            var expectedM2 = SrpEncoding.ComputeM2(context, A_big, M1_bytes, sessionKeyK);
+            var expectedM2Base64 = Convert.ToBase64String(expectedM2); // уже byte[]
+
+            var result = _client.VerifyServerM2(A, M1, sessionKeyK, expectedM2Base64, context);
 
             // Assert
             Assert.True(result);
@@ -244,31 +238,28 @@ namespace Crossdyne.Security.Tests
             var x = new BigInteger(authHashBytes, isBigEndian: true, isUnsigned: true);
             var v = BigInteger.ModPow(context.G, x, context.N);
             
-            var bBytes = RandomNumberGenerator.GetBytes(32);
+            var bBytes = RandomNumberGenerator.GetBytes(Math.Max(32, context.ModulusSize / 2));
             var B = GenerateValidB(v, bBytes);
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
             
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
-            BigInteger S_big = BigIntegerUtilities.FromBase64(S);
-            var sessionKeyK = SrpEncoding.ComputeSessionKey(context, S_big);
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
             
             // Create invalid M2 (flip one bit)
-            var validM2Bytes = SrpEncoding.ToHashBytes(context, SrpEncoding.ComputeM2(
+            var validM2Bytes = SrpEncoding.ComputeM2(
                 context,
                 BigIntegerUtilities.FromBase64(A),
-                BigIntegerUtilities.FromBase64(M1),
-                sessionKeyK));
+                Convert.FromBase64String(M1),
+                sessionKeyK);
 
             validM2Bytes[0] ^= 0x01;
             var invalidM2Base64 = Convert.ToBase64String(validM2Bytes);
 
             // Act
-            var result = _client.VerifyServerM2(A, M1, S, invalidM2Base64, context);
+            var result = _client.VerifyServerM2(A, M1, sessionKeyK, invalidM2Base64, context);
 
             // Assert
             Assert.False(result);
         }
-
         #endregion
 
         #region Security & Edge Cases

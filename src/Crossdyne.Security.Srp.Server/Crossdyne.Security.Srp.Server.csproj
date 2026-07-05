@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Srp.Server</PackageId>
-    <Version>0.3.0-beta.1</Version>
+    <Version>0.4.0-beta.1</Version>
     <Description>Secure Remote Password (SRP-6a) protocol server implementation. Provides secure password verification and session establishment for authentication servers. Includes password verifier storage and multi-step authentication flow.</Description>
     <PackageTags>security;srp;srp-6a;authentication;server;password-auth;zero-knowledge;proof;secure-login;verifier</PackageTags>
     

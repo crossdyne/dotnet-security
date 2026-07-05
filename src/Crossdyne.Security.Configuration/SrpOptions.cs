@@ -24,7 +24,7 @@ namespace Crossdyne.Security.Configuration
         public BigInteger N => SrpGroupParams.GetN(Group);
 
         /// <summary>Generator g for the selected group (2, 5, or 19).</summary>
-        public int G => (int)SrpGroupParams.GetG(Group);
+        public BigInteger  G => SrpGroupParams.GetG(Group);
 
         /// <summary>Byte length of N (ceil(bitLength / 8)).</summary>
         public int ModulusSize => (int)((N.GetBitLength() + 7) / 8);
@@ -36,12 +36,11 @@ namespace Crossdyne.Security.Configuration
         public BigInteger ComputeK()
         {
             using var hash = IncrementalHash.CreateHash(HashAlgorithmName);
-            
             byte[] nBytes = ToFixedLengthBytes(N, ModulusSize);
-            byte[] gBytes = ToFixedLengthBytes(new BigInteger(G), ModulusSize);
+            byte[] gBytes = ToFixedLengthBytes(G, ModulusSize);
 
-            var ngBytes = Concat(nBytes, gBytes);
-            hash.AppendData(ngBytes);
+            hash.AppendData(nBytes);
+            hash.AppendData(gBytes);
             var kBytes = hash.GetHashAndReset();
 
             return new BigInteger(kBytes, isUnsigned: true, isBigEndian: true);
@@ -57,6 +56,13 @@ namespace Crossdyne.Security.Configuration
             return result;
         }
 
+        /// <summary>
+        /// Converts BigInteger to fixed-length big-endian bytes.
+        /// </summary>
+        /// <remarks>
+        /// Intentionally duplicated from BigIntegerUtilities to avoid cross-layer 
+        /// dependency (Configuration => Utilities). Keep in sync manually.
+        /// </remarks>
         private static byte[] ToFixedLengthBytes(BigInteger value, int length)
         {
             if (length <= 0) throw 

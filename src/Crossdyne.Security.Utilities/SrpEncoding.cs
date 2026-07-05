@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Text;
 using Crossdyne.Security.Abstractions;
 
 namespace Crossdyne.Security.Utilities
@@ -33,43 +34,71 @@ namespace Crossdyne.Security.Utilities
             BigIntegerUtilities.Hash(ctx.HashAlgorithmName, values.Select(v => ToModulusBytes(ctx, v)).ToArray());
 
         /// <summary>
-        /// Hashes mixed <see cref="BigInteger"/> values serialized as modulus-sized.
+        /// Computes the client proof M1 = H( H(N) ⊕ H(g) | H(I) | s | PAD(A) | PAD(B) | K ).
         /// </summary>
-        /// <param name="ctx">SRP context.</param>
-        /// <param name="values">Values to hash.</param>
-        public static BigInteger HashMixed(SrpContext ctx, params BigInteger[] values)
-        {
-            var buffers = values.Select(v => ToModulusBytes(ctx, v)).ToArray();
-            return BigIntegerUtilities.Hash(ctx.HashAlgorithmName, buffers);
-        }
-
-        /// <summary>
-        /// Computes M1 = H(A || B || sessionKeyK).
-        /// </summary>
-        /// <param name="ctx">SRP context.</param>
+        /// <remarks>
+        /// Follows RFC 5054 / SRP-6a: 
+        /// <list type="bullet">
+        ///   <item><description>H(N) and H(g) are hashed as modulus-sized values.</description></item>
+        ///   <item><description>Identity (I) is hashed as raw UTF-8 bytes.</description></item>
+        ///   <item><description>A and B are padded to the modulus size before hashing.</description></item>
+        ///   <item><description>K is the session key (H(S) without padding).</description></item>
+        /// </list>
+        /// </remarks>
+        /// <param name="ctx">SRP context containing N, g, hash algorithm, and modulus size.</param>
         /// <param name="A">Client ephemeral public key.</param>
         /// <param name="B">Server ephemeral public key.</param>
-        /// <param name="sessionKeyK">Session key bytes.</param>
-        public static BigInteger ComputeM1(SrpContext ctx, BigInteger A, BigInteger B, byte[] sessionKeyK) =>
-        BigIntegerUtilities.Hash(
-            ctx.HashAlgorithmName,
-            ToModulusBytes(ctx, A),
-            ToModulusBytes(ctx, B),
-            sessionKeyK
-        );
+        /// <param name="sessionKeyK">Session key K as raw bytes.</param>
+        /// <param name="identity">User identity (login). Should already be normalized (trimmed / lowercased) by the caller.</param>
+        /// <param name="salt">User-specific salt bytes.</param>
+        /// <returns>The M1 proof as raw hash bytes.</returns>
+        public static byte[] ComputeM1(
+            SrpContext ctx, 
+            BigInteger A, 
+            BigInteger B, 
+            byte[] sessionKeyK, 
+            string identity, 
+            byte[] salt)
+        {
+            // H(N) и H(g)
+            byte[] nBytes = ToModulusBytes(ctx, ctx.N);
+            byte[] gBytes = ToModulusBytes(ctx, ctx.G);
+            byte[] hashN = BigIntegerUtilities.ComputeHash(ctx.HashAlgorithmName, nBytes);
+            byte[] hashG = BigIntegerUtilities.ComputeHash(ctx.HashAlgorithmName, gBytes);
+
+            // H(N) ⊕ H(g)
+            byte[] xorNg = new byte[hashN.Length];
+            for (int i = 0; i < hashN.Length; i++)
+                xorNg[i] = (byte)(hashN[i] ^ hashG[i]);
+
+            // H(I) — identity hashed as UTF-8
+            byte[] hashI = BigIntegerUtilities.ComputeHash(
+                ctx.HashAlgorithmName, 
+                Encoding.UTF8.GetBytes(identity));
+
+            // Final hash: H( H(N)⊕H(g) | H(I) | s | PAD(A) | PAD(B) | K )
+            return BigIntegerUtilities.ComputeHash(
+                ctx.HashAlgorithmName,
+                xorNg,
+                hashI,
+                salt,
+                ToModulusBytes(ctx, A),
+                ToModulusBytes(ctx, B),
+                sessionKeyK);
+        }
 
         /// <summary>
         /// Computes M2 = H(A || M1 || sessionKeyK).
         /// </summary>
         /// <param name="ctx">SRP context.</param>
         /// <param name="A">Client ephemeral public key.</param>
-        /// <param name="M1">Client proof.</param>
+        /// <param name="M1_Bytes">Client proof.</param>
         /// <param name="sessionKeyK">Session key bytes.</param>
-        public static BigInteger ComputeM2(SrpContext ctx, BigInteger A, BigInteger M1, byte[] sessionKeyK) =>
-        BigIntegerUtilities.Hash(
+        public static byte[] ComputeM2(SrpContext ctx, BigInteger A, byte[] M1_Bytes, byte[] sessionKeyK) =>
+        BigIntegerUtilities.ComputeHash(
             ctx.HashAlgorithmName,
             ToModulusBytes(ctx, A),
-            ToHashBytes(ctx, M1),
+            M1_Bytes,
             sessionKeyK
         );
 
@@ -80,7 +109,7 @@ namespace Crossdyne.Security.Utilities
         /// <param name="S">Shared secret.</param>
         public static byte[] ComputeSessionKey(SrpContext ctx, BigInteger S)
         {
-            byte[] sBytes = ToModulusBytes(ctx, S);
+            byte[] sBytes = S.ToByteArray(isUnsigned: true, isBigEndian: true);
             return BigIntegerUtilities.ComputeHash(ctx.HashAlgorithmName, sBytes);
         }
     }

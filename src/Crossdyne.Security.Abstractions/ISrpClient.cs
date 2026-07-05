@@ -22,7 +22,7 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="saltBase64">Server salt (URL-safe Base64).</param>
         /// <param name="bBase64">Server public B (URL-safe Base64).</param>
         /// <returns>Tuple (A, M1, S) as Base64 strings.</returns>
-        (string A, string M1, string S) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx);
+        (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx);
 
         /// <summary>
         /// Verifies the server proof M2.
@@ -30,9 +30,9 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="ctx">SRP context.</param>
         /// <param name="A">Client public A (Base64).</param>
         /// <param name="M1">Client proof M1 (Base64).</param>
-        /// <param name="S">Session key S (Base64).</param>
+        /// <param name="SessionKeyK">Session key (Base64).</param>
         /// <param name="ServerM2">Server proof M2 (Base64).</param>
         /// <returns>True if server proof is valid.</returns>
-        bool VerifyServerM2(string A, string M1, string S, string ServerM2, SrpContext ctx);
+        bool VerifyServerM2(string A, string M1, byte[] SessionKeyK, string ServerM2, SrpContext ctx);
     }
 }

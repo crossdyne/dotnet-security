@@ -64,6 +64,9 @@ namespace Crossdyne.Security.Cryptography
         /// <exception cref="SecurityException">Derivation error.</exception>
         public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, KdfOptions? options = null)
         {
+            if (string.IsNullOrWhiteSpace(identity))
+                throw new ArgumentException("Identity cannot be null or empty.", nameof(identity));
+
             if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentException("Password cannot be null or empty.", nameof(password));
 
@@ -72,10 +75,10 @@ namespace Crossdyne.Security.Cryptography
                 
             var opts = options ?? KdfOptions.Default;
             opts.Validate();
-            
-            string normalizedIdentity = identity.Trim().ToLowerInvariant();
-            string combinedPassword = $"{normalizedIdentity}:{password}";
-            byte[] masterKey = [];
+
+            string combinedPassword = $"{identity}:{password}";
+
+            byte[]? masterKey = null;
 
             try
             {
@@ -85,7 +88,7 @@ namespace Crossdyne.Security.Cryptography
                 byte[] authBytes = HKDF.DeriveKey(opts.HashAlgorithm, masterKey, SecurityConstants.KeySizeBytes, emptySalt, Encoding.UTF8.GetBytes("SERVER-AUTH-HASH-v1"));
 
                 string authHashString = Convert.ToBase64String(authBytes);
-                Array.Clear(authBytes, 0, authBytes.Length);
+                CryptographicOperations.ZeroMemory(authBytes);
 
                 return (kek, authHashString);
             }
@@ -95,8 +98,8 @@ namespace Crossdyne.Security.Cryptography
             }
             finally
             {
-                if (masterKey.Length > 0)
-                    Array.Clear(masterKey, 0, masterKey.Length);
+                if (masterKey is not null)
+                    CryptographicOperations.ZeroMemory(masterKey);
             }
         }
 
@@ -131,11 +134,9 @@ namespace Crossdyne.Security.Cryptography
                 _ => throw new ArgumentException($"Unsupported hash algorithm for SRP: {srpHashAlgorithm.Name}", nameof(srpHashAlgorithm))
             };
 
-            string normalizedIdentity = identity.Trim().ToLowerInvariant();
-            string combinedPassword = $"{normalizedIdentity}:{password}";
+            string combinedPassword = $"{identity}:{password}";
 
-            byte[] masterKey = new byte[SecurityConstants.KeySizeBytes];
-            byte[] authHash = new byte[srpHashSize];
+            byte[]? masterKey = null;
 
             try
             {
@@ -148,25 +149,23 @@ namespace Crossdyne.Security.Cryptography
 
                 byte[] emptySalt = [];
 
-                authHash = HKDF.DeriveKey(
+                byte[] authHash = HKDF.DeriveKey(
                     srpHashAlgorithm, 
                     masterKey, 
                     srpHashSize, 
                     emptySalt, 
                     Encoding.UTF8.GetBytes("SRP-AUTH-HASH-v1"));
-
-                byte[] result = new byte[authHash.Length];
-                Buffer.BlockCopy(authHash, 0, result, 0, authHash.Length);
-                return result;
+    
+                return authHash;
             }
-            catch (Exception ex) when (!(ex is ArgumentException || ex is InvalidKeyException || ex is SecurityException))
+            catch (Exception ex) when (ex is not ArgumentException and not InvalidKeyException and not SecurityException)
             {
                 throw new SecurityException("SRP key derivation failed due to an internal error.", ex);
             }
             finally
             {
-                if (masterKey.Length > 0) Array.Clear(masterKey, 0, masterKey.Length);
-                if (authHash.Length > 0) Array.Clear(authHash, 0, authHash.Length);
+                if (masterKey is not null) 
+                    CryptographicOperations.ZeroMemory(masterKey);
             }
         }
     }
