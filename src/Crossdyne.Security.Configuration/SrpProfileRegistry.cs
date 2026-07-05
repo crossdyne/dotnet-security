@@ -18,7 +18,9 @@ namespace Crossdyne.Security.Configuration
                 SrpGroup.Rfc5054_1024 => HashAlgorithmName.SHA256,
                 SrpGroup.Rfc5054_2048 => HashAlgorithmName.SHA256,
                 SrpGroup.Rfc5054_3072 => HashAlgorithmName.SHA256,
-                SrpGroup.Rfc5054_4096 => HashAlgorithmName.SHA384,
+                SrpGroup.Rfc5054_4096 or 
+                SrpGroup.Rfc5054_6144 or 
+                SrpGroup.Rfc5054_8192 => HashAlgorithmName.SHA384,
                 _ => HashAlgorithmName.SHA256
             };
 

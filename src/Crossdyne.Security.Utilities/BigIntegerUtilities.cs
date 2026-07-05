@@ -35,10 +35,9 @@ namespace Crossdyne.Security.Utilities
         }
 
         /// <summary>
-        /// Parses a URL-safe Base64 string into an unsigned, big-endian <see cref="BigInteger"/>.
+        /// Decodes a URL-safe or standard Base64 string to raw bytes (with padding fix).
         /// </summary>
-        /// <exception cref="ArgumentNullException"><paramref name="base64"/> is null or empty.</exception>
-        public static BigInteger FromBase64(string base64)
+        public static byte[] DecodeBase64ToBytes(string base64)
         {
             if (string.IsNullOrEmpty(base64))
                 throw new ArgumentNullException(nameof(base64));
@@ -49,8 +48,17 @@ namespace Crossdyne.Security.Utilities
             if (mod != 0)
                 cleaned += new string('=', 4 - mod);
 
-            byte[] bytes = Convert.FromBase64String(cleaned);
+            return Convert.FromBase64String(cleaned);
+        }
 
+        /// <summary>
+        /// Converts a bse64 value to a BigInteger
+        /// </summary>
+        /// <param name="base64"></param>
+        /// <returns></returns>
+        public static BigInteger FromBase64(string base64)
+        {
+            byte[] bytes = DecodeBase64ToBytes(base64);
             return new BigInteger(bytes, isUnsigned: true, isBigEndian: true);
         }
 

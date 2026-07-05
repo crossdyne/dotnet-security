@@ -1,3 +1,5 @@
+using System.Security.Cryptography;
+
 namespace Crossdyne.Security.Abstractions
 {
     /// <summary>
@@ -6,9 +8,46 @@ namespace Crossdyne.Security.Abstractions
     /// the user's verifier from the database, and the server's ephemeral public key (B)
     /// to be sent to the client for session key generation.
     /// </summary>
-    /// <param name="Login">The user's login identifier (username/email)</param>
-    /// <param name="PrivateKeyB">The server's ephemeral private key (b) - keep secure, never sent to client</param>
-    /// <param name="Verifier">The user's verifier (v) retrieved from the database</param>
-    /// <param name="PublicKeyB">The server's ephemeral public key (B) sent to the client</param>
-    public record SrpSessionState(string Login, string PrivateKeyB, string Verifier, string PublicKeyB);
+    public sealed class SrpSessionState : IDisposable
+    {
+        /// <summary>
+        /// User login
+        /// </summary>
+        public string Login { get; }
+        
+        /// <summary>Server ephemeral secret b. Requires explicit erasure.</summary>
+        public byte[] PrivateKeyB { get; }
+        
+        /// <summary>SRP verifier v (public, but binary).</summary>
+        public byte[] Verifier { get; }
+        
+        /// <summary>Public ephemeral key B</summary>
+        public byte[] PublicKeyB { get; }
+
+        /// <summary>User salt s (needed for RFC 5054 M1).</summary>
+        public byte[] Salt { get; }
+
+        /// <param name="login">The user's login identifier (username/email)</param>
+        /// <param name="privateKeyB">The server's ephemeral private key (b) - keep secure, never sent to client</param>
+        /// <param name="verifier">The user's verifier (v) retrieved from the database</param>
+        /// <param name="publicKeyB">The server's ephemeral public key (B) sent to the client</param>
+        /// <param name="salt">Authentication hash generated during registration</param>
+        public SrpSessionState(string login, byte[] privateKeyB, byte[] verifier, byte[] publicKeyB, byte[] salt)
+        {
+            Login = login;
+            PrivateKeyB = privateKeyB;
+            Verifier = verifier;
+            PublicKeyB = publicKeyB;
+            Salt = salt;
+        }
+
+        /// <summary>
+        /// Resource cleaning
+        /// </summary>
+        public void Dispose()
+        {
+            CryptographicOperations.ZeroMemory(PrivateKeyB);
+        }
+    }
+
 }

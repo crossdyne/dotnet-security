@@ -11,8 +11,9 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="ctx">SRP context.</param>
         /// <param name="login">User login.</param>
         /// <param name="verifierBytes">Stored verifier v as byte array.</param>
+        /// <param name="salt">Auth salt.</param>
         /// <returns><see cref="SrpSessionState"/> containing private b, verifier, public B.</returns>
-        SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, SrpContext ctx);
+        SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, byte[] salt, SrpContext ctx);
 
         /// <summary>
         /// Verifies client M1 and returns server M2 proof.
