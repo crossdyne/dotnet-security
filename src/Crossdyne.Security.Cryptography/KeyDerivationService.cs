@@ -18,8 +18,7 @@ namespace Crossdyne.Security.Cryptography
     public class KeyDerivationService: IKeyDerivationService
     {
         /// <summary>
-        /// Derives KEK and Base64 AuthHash using default KDF options.
-        /// Identity is normalized (trimmed, lowercase).
+        /// Identity is hashed as-is; caller must normalize before calling
         /// </summary>
         /// <param name="identity">User identity (email, username).</param>
         /// <param name="password">User password.</param>
