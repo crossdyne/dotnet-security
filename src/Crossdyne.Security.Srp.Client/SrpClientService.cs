@@ -43,7 +43,7 @@ namespace Crossdyne.Security.Srp.Client
             byte[] B_bytes = BigIntegerUtilities.DecodeBase64ToBytes(B_base64);
             BigInteger B = new(B_bytes, isBigEndian: true, isUnsigned: true);
 
-            if (B % ctx.N == 0)
+            if (B % ctx.N == 0 || B >= ctx.N)
                 throw new SecurityException("Invalid server public key B (Zero-Key Attack).");
 
             BigInteger u = SrpEncoding.HashModuli(ctx, A, B); 
