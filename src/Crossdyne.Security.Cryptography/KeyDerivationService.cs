@@ -150,7 +150,7 @@ namespace Crossdyne.Security.Cryptography
             var opts = options ?? KdfOptions.Default;
             opts.Validate();
 
-            int hashSize = GetHashSizeBytes(opts.HashAlgorithm);
+            int hashSize = GetHashSizeBytes(srpHashAlgorithm);
 
             string combinedPassword = $"{identity}:{password}";
 
