@@ -72,7 +72,10 @@ namespace Crossdyne.Security.Cryptography
 
             if (salt == null)
                 throw new InvalidKeyException($"Salt must be not null.");
-                
+
+            if (salt.Length < 16)
+                throw new InvalidKeyException("Salt must be at least 16 bytes.");
+
             var opts = options ?? KdfOptions.Default;
             opts.Validate();
 
@@ -120,8 +123,12 @@ namespace Crossdyne.Security.Cryptography
         {
             if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentException("Password cannot be null or empty.", nameof(password));
+
             if (salt == null)
                 throw new InvalidKeyException("Salt must not be null.");
+
+            if (salt.Length < 16)
+                throw new InvalidKeyException("Salt must be at least 16 bytes.");
 
             var opts = options ?? KdfOptions.Default;
             opts.Validate();
