@@ -26,6 +26,9 @@ namespace Crossdyne.Security.Srp.Server
 
             BigInteger v = new(verifierBytes, isUnsigned: true, isBigEndian: true);
 
+            if (v <= 0 || v >= ctx.N)
+                throw new SrpVerificationException("The verifier is corrupted");
+
             int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
             byte[] bBytes;
             BigInteger B;
@@ -66,7 +69,7 @@ namespace Crossdyne.Security.Srp.Server
             BigInteger v = new(sessionState.Verifier, isUnsigned: true, isBigEndian: true);
             BigInteger B = new(sessionState.PublicKeyB, isUnsigned: true, isBigEndian: true);
 
-            if (v <= 0)
+            if (v <= 0 || v >= ctx.N)
                 throw new SrpVerificationException("The verifier is corrupted");
 
             if (A % ctx.N == 0)
