@@ -17,8 +17,17 @@ namespace Crossdyne.Security.Cryptography
     /// </remarks>
     public class KeyDerivationService: IKeyDerivationService
     {
+        private static int GetHashSizeBytes(HashAlgorithmName hashAlgorithm) => hashAlgorithm switch
+        {
+            var h when h == HashAlgorithmName.SHA256 => 32,
+            var h when h == HashAlgorithmName.SHA384 => 48,
+            var h when h == HashAlgorithmName.SHA512 => 64,
+            _ => throw new ArgumentException($"Unsupported hash algorithm: {hashAlgorithm.Name}", nameof(hashAlgorithm))
+        };
+
         /// <summary>
-        /// Identity is hashed as-is; caller must normalize before calling
+        /// Identity is hashed as-is. Caller must normalize (trim, lowercase, etc.) 
+        /// before calling to ensure cross-platform consistency.
         /// </summary>
         /// <param name="identity">User identity (email, username).</param>
         /// <param name="password">User password.</param>
@@ -30,6 +39,8 @@ namespace Crossdyne.Security.Cryptography
 
         /// <summary>
         /// Derives KEK and Base64 AuthHash with optional custom PBKDF2 iterations.
+        /// Identity is hashed as-is. Caller must normalize (trim, lowercase, etc.) 
+        /// before calling to ensure cross-platform consistency.
         /// </summary>
         /// <param name="identity">User identity.</param>
         /// <param name="password">User password.</param>
@@ -52,6 +63,8 @@ namespace Crossdyne.Security.Cryptography
         /// <summary>
         /// Full KDF configuration overload.
         /// Derivation: PBKDF2(identity:password) → HKDF(KEK, AuthHash).
+        /// Identity is hashed as-is. Caller must normalize (trim, lowercase, etc.) 
+        /// before calling to ensure cross-platform consistency.
         /// </summary>
         /// <param name="identity"></param>
         /// <param name="password"></param>
@@ -84,7 +97,8 @@ namespace Crossdyne.Security.Cryptography
 
             try
             {
-                masterKey = Rfc2898DeriveBytes.Pbkdf2(combinedPassword, salt, opts.Pbkdf2Iterations, opts.HashAlgorithm, SecurityConstants.KeySizeBytes);
+                int hashSize = GetHashSizeBytes(opts.HashAlgorithm);
+                masterKey = Rfc2898DeriveBytes.Pbkdf2(combinedPassword, salt, opts.Pbkdf2Iterations, opts.HashAlgorithm, hashSize);
                 byte[] emptySalt = []; 
                 byte[] kek = HKDF.DeriveKey(opts.HashAlgorithm, masterKey, SecurityConstants.KeySizeBytes, emptySalt, Encoding.UTF8.GetBytes("AES-GCM-KEK-v1"));
                 byte[] authBytes = HKDF.DeriveKey(opts.HashAlgorithm, masterKey, SecurityConstants.KeySizeBytes, emptySalt, Encoding.UTF8.GetBytes("SERVER-AUTH-HASH-v1"));
@@ -107,7 +121,8 @@ namespace Crossdyne.Security.Cryptography
 
         /// <summary>
         /// Derives an SRP-compatible authentication hash (output size = hash output length).
-        /// 
+        /// Identity is hashed as-is. Caller must normalize (trim, lowercase, etc.) 
+        /// before calling to ensure cross-platform consistency.
         /// <param name="identity"></param>
         /// <param name="password"></param>
         /// <param name="salt"></param>
@@ -135,13 +150,7 @@ namespace Crossdyne.Security.Cryptography
             var opts = options ?? KdfOptions.Default;
             opts.Validate();
 
-            int srpHashSize = srpHashAlgorithm switch
-            {
-                var h when h == HashAlgorithmName.SHA256 => 32,
-                var h when h == HashAlgorithmName.SHA384 => 48,
-                var h when h == HashAlgorithmName.SHA512 => 64,
-                _ => throw new ArgumentException($"Unsupported hash algorithm for SRP: {srpHashAlgorithm.Name}", nameof(srpHashAlgorithm))
-            };
+            int hashSize = GetHashSizeBytes(opts.HashAlgorithm);
 
             string combinedPassword = $"{identity}:{password}";
 
@@ -154,14 +163,14 @@ namespace Crossdyne.Security.Cryptography
                     salt, 
                     opts.Pbkdf2Iterations, 
                     srpHashAlgorithm, 
-                    SecurityConstants.KeySizeBytes);
+                    hashSize);
 
                 byte[] emptySalt = [];
 
                 byte[] authHash = HKDF.DeriveKey(
                     srpHashAlgorithm, 
                     masterKey, 
-                    srpHashSize, 
+                    hashSize, 
                     emptySalt, 
                     Encoding.UTF8.GetBytes("SRP-AUTH-HASH-v1"));
     
