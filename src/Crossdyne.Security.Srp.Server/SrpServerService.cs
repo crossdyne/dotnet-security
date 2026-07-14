@@ -96,6 +96,9 @@ namespace Crossdyne.Security.Srp.Server
 
             BigInteger vU = BigInteger.ModPow(v, u, ctx.N);
             BigInteger S = BigInteger.ModPow((A * vU) % ctx.N, b, ctx.N);
+            
+            if (S == 0)
+                throw new SecurityException("Critical error: shared secret S is zero (possible malicious A).");
 
             byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
 
