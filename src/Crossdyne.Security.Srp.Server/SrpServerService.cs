@@ -30,17 +30,25 @@ namespace Crossdyne.Security.Srp.Server
                 throw new SrpVerificationException("The verifier is corrupted");
 
             int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
+
             byte[] bBytes;
             BigInteger B;
-            do
+
+            while (true)
             {
                 bBytes = new byte[privateKeySize];
                 RandomNumberGenerator.Fill(bBytes);
                 BigInteger b = new(bBytes, isUnsigned: true, isBigEndian: true);
 
+                if (b == 0)
+                    continue;
+
                 BigInteger gB = BigInteger.ModPow(ctx.G, b, ctx.N);
                 B = (ctx.K * v + gB) % ctx.N;
-            } while (B == 0);
+
+                if (B != 0)
+                    break;
+            }
 
             var session = new SrpSessionState(
                 login,

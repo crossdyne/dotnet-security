@@ -37,8 +37,13 @@ namespace Crossdyne.Security.Srp.Client
 
                 int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
                 aBytes = new byte[privateKeySize];
-                RandomNumberGenerator.Fill(aBytes);
-                BigInteger a = new(aBytes, isBigEndian: true, isUnsigned: true);
+                BigInteger a;
+
+                do
+                {
+                    RandomNumberGenerator.Fill(aBytes);
+                    a = new BigInteger(aBytes, isBigEndian: true, isUnsigned: true);
+                } while (a == 0);
 
                 BigInteger A = BigInteger.ModPow(ctx.G, a, ctx.N);
 
