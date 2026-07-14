@@ -26,45 +26,58 @@ namespace Crossdyne.Security.Srp.Client
             KeyDerivationService keyDerivationService = new();
 
             byte[] salt = BigIntegerUtilities.DecodeBase64ToBytes(saltBase64);
-            byte[] authHashBytes = keyDerivationService.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName);
+            byte[]? authHashBytes = null;
+            byte[]? aBytes = null;
 
-            BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);
+            try
+            {
+                authHashBytes = keyDerivationService.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName);
 
-            int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
-            byte[] aBytes = new byte[privateKeySize];
-            RandomNumberGenerator.Fill(aBytes);
-            BigInteger a = new(aBytes, isBigEndian: true, isUnsigned: true);
+                BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);
 
-            BigInteger A = BigInteger.ModPow(ctx.G, a, ctx.N);
+                int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
+                aBytes = new byte[privateKeySize];
+                RandomNumberGenerator.Fill(aBytes);
+                BigInteger a = new(aBytes, isBigEndian: true, isUnsigned: true);
 
-            if (A == 0)
-                throw new SecurityException("Invalid client public key A (Zero-Key Attack).");
+                BigInteger A = BigInteger.ModPow(ctx.G, a, ctx.N);
 
-            byte[] B_bytes = BigIntegerUtilities.DecodeBase64ToBytes(B_base64);
-            BigInteger B = new(B_bytes, isBigEndian: true, isUnsigned: true);
+                if (A == 0)
+                    throw new SecurityException("Invalid client public key A (Zero-Key Attack).");
 
-            if (B % ctx.N == 0 || B >= ctx.N)
-                throw new SecurityException("Invalid server public key B (Zero-Key Attack).");
+                byte[] B_bytes = BigIntegerUtilities.DecodeBase64ToBytes(B_base64);
+                BigInteger B = new(B_bytes, isBigEndian: true, isUnsigned: true);
 
-            BigInteger u = SrpEncoding.HashModuli(ctx, A, B); 
-            
-            if (u == 0)
-                throw new SrpVerificationException("Error in calculating the parameter u");
+                if (B % ctx.N == 0 || B >= ctx.N)
+                    throw new SecurityException("Invalid server public key B.");
 
-            BigInteger gX = BigInteger.ModPow(ctx.G, x, ctx.N);
-            BigInteger term = (ctx.K * gX) % ctx.N;
-            BigInteger baseBigInt = (B - term + ctx.N) % ctx.N;
-            BigInteger exponent = a + (u * x);
-            BigInteger S = BigInteger.ModPow(baseBigInt, exponent, ctx.N);
+                BigInteger u = SrpEncoding.HashModuli(ctx, A, B);
 
-            byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
+                if (u == 0)
+                    throw new SrpVerificationException("Error in calculating the parameter u");
 
-            byte[] m1Bytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK, login, salt); 
+                BigInteger gX = BigInteger.ModPow(ctx.G, x, ctx.N);
+                BigInteger term = (ctx.K * gX) % ctx.N;
+                BigInteger baseBigInt = (B - term + ctx.N) % ctx.N;
+                BigInteger exponent = a + (u * x);
+                BigInteger S = BigInteger.ModPow(baseBigInt, exponent, ctx.N);
 
-            return (
-                A: Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, A)),
-                M1: Convert.ToBase64String(m1Bytes),
-                SessionKeyK: sessionKeyK);
+                byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
+                byte[] m1Bytes = SrpEncoding.ComputeM1(ctx, A, B, sessionKeyK, login, salt);
+
+                return (
+                    A: Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, A)),
+                    M1: Convert.ToBase64String(m1Bytes),
+                    SessionKeyK: sessionKeyK);
+            }
+            finally
+            {
+                if (authHashBytes is not null)
+                    CryptographicOperations.ZeroMemory(authHashBytes);
+
+                if (aBytes is not null)
+                    CryptographicOperations.ZeroMemory(aBytes);
+            }
         }
 
         /// <summary>
