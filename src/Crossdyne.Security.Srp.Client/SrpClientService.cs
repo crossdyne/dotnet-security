@@ -47,8 +47,8 @@ namespace Crossdyne.Security.Srp.Client
 
                 BigInteger A = BigInteger.ModPow(ctx.G, a, ctx.N);
 
-                if (A == 0)
-                    throw new SecurityException("Invalid client public key A (Zero-Key Attack).");
+                if (A <= 0 || A >= ctx.N)
+                    throw new SecurityException("Invalid client public key A.");
 
                 byte[] B_bytes = BigIntegerUtilities.DecodeBase64ToBytes(bBase64);
                 BigInteger B = new(B_bytes, isBigEndian: true, isUnsigned: true);

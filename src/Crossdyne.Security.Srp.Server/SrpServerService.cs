@@ -50,6 +50,9 @@ namespace Crossdyne.Security.Srp.Server
                     break;
             }
 
+            if (B >= ctx.N)
+                throw new SrpVerificationException("Invalid server public key B.");
+
             var session = new SrpSessionState(
                 login,
                 bBytes,
