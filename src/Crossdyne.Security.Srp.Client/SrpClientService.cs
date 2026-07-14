@@ -17,11 +17,11 @@ namespace Crossdyne.Security.Srp.Client
         /// </summary>
         /// <param name="login">User login.</param>
         /// <param name="password">Plaintext password.</param>
-        /// <param name="saltBase64">Server salt (URL-safe Base64).</param>
-        /// <param name="B_base64">Server public ephemeral B (URL-safe Base64).</param>
+        /// <param name="saltBase64">Server salt (standard Base64).</param>
+        /// <param name="bBase64">Server public ephemeral B (standard Base64).</param>
         /// <param name="ctx">SRP context (hash algorithm, N, g, etc.).</param>
-        /// <returns>Tuple (A, M1, S) as Base64 strings.</returns>
-        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string B_base64, SrpContext ctx)    
+        /// <returns>Tuple (A, M1, sessionKeyK) where A and M1 are standard Base64.</returns>
+        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx)    
         {
             KeyDerivationService keyDerivationService = new();
 
@@ -45,7 +45,7 @@ namespace Crossdyne.Security.Srp.Client
                 if (A == 0)
                     throw new SecurityException("Invalid client public key A (Zero-Key Attack).");
 
-                byte[] B_bytes = BigIntegerUtilities.DecodeBase64ToBytes(B_base64);
+                byte[] B_bytes = BigIntegerUtilities.DecodeBase64ToBytes(bBase64);
                 BigInteger B = new(B_bytes, isBigEndian: true, isUnsigned: true);
 
                 if (B % ctx.N == 0 || B >= ctx.N)
