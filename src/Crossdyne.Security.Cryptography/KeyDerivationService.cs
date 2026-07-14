@@ -121,6 +121,9 @@ namespace Crossdyne.Security.Cryptography
         /// </summary>
         public byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm,  KdfOptions? options = null)
         {
+            if (string.IsNullOrWhiteSpace(identity))
+                throw new ArgumentException("Identity cannot be null or empty.", nameof(identity));
+
             if (string.IsNullOrWhiteSpace(password))
                 throw new ArgumentException("Password cannot be null or empty.", nameof(password));
 
