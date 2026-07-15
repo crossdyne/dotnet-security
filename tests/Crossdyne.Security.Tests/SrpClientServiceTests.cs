@@ -104,10 +104,18 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void GenerateSrpProof_UrlSafeBase64Salt_HandlesCorrectly()
         {
-            // Arrange: Salt with + and / characters that need URL-safe conversion
+            var saltWithSpecialChars = new byte[32];
+            saltWithSpecialChars[0] = 0xfb;
+            saltWithSpecialChars[1] = 0xff;
+            saltWithSpecialChars[2] = 0xfe;
+            saltWithSpecialChars[3] = 0xfd;
+            RandomNumberGenerator.Fill(saltWithSpecialChars.AsSpan(4));
+            
+            var saltBase64Url = Convert.ToBase64String(saltWithSpecialChars)
+                .Replace('+', '-')
+                .Replace('/', '_');
+
             var context = SrpHelper.GetSrpContext();
-            var saltWithSpecialChars = new byte[] { 0xfb, 0xff, 0xfe, 0xfd }; // Will produce + and / in Base64
-            var saltBase64Url = Convert.ToBase64String(saltWithSpecialChars).Replace('+', '-').Replace('/', '_');
             var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, saltWithSpecialChars);
             var authHashBytes = Convert.FromBase64String(authHash);
             var x = new BigInteger(authHashBytes, isBigEndian: true, isUnsigned: true);
@@ -117,10 +125,8 @@ namespace Crossdyne.Security.Tests
             var B = GenerateValidB(v, bBytes);
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
 
-            // Act
             var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64Url, B_base64, context);
 
-            // Assert
             Assert.NotNull(A);
             Assert.NotNull(M1);
             Assert.NotNull(S);

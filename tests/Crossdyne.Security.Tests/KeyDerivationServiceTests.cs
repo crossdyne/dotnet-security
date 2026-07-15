@@ -97,18 +97,6 @@ namespace Crossdyne.Security.Tests
         #region Custom Iterations Tests
 
         [Fact]
-        public void DeriveKeysFromPassword_WithCustomIterations_UsesSpecifiedValue()
-        {
-            const int customIterations = 200_000;
-
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, pbkdf2Iterations: customIterations);
-
-            Assert.NotNull(kek);
-            Assert.NotNull(authHash);
-            Assert.Equal(SecurityConstants.KeySizeBytes, kek.Length);
-        }
-
-        [Fact]
         public void CryptoOptions_Pbkdf2Iterations_ThrowsOnSet_WhenBelowMinimum()
         {
             var options = new KdfOptions();
@@ -213,17 +201,14 @@ namespace Crossdyne.Security.Tests
         }
 
         [Fact]
-        public void DeriveKeysFromPassword_EmptySaltArray_AcceptedButNotRecommended()
+        public void DeriveKeysFromPassword_EmptySaltArray_ThrowsInvalidKeyException()
         {
             var emptySalt = Array.Empty<byte>();
 
-            // PBKDF2 technically accepts empty salt, but it's insecure.
-            // The service only checks for null, not empty.
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, emptySalt);
+            var exception = Assert.Throws<InvalidKeyException>(() => 
+                _service.DeriveKeysFromPassword(TestLogin, _testPassword, emptySalt));
             
-            Assert.NotNull(kek);
-            Assert.NotNull(authHash);
-            // Note: In production, always use cryptographically random salt!
+            Assert.Contains("at least 16 bytes", exception.Message);
         }
 
         [Fact]
