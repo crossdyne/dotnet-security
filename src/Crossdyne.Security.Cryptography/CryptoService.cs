@@ -1,4 +1,5 @@
 using System.Security.Cryptography;
+using System.Text;
 using System.Text.Json;
 using Crossdyne.Security.Abstractions;
 using Crossdyne.Security.Configuration;
@@ -38,7 +39,17 @@ namespace Crossdyne.Security.Cryptography
             opts.Validate();
 
 
-            byte[] plainBytes = JsonSerializer.SerializeToUtf8Bytes(data);
+            byte[] plainBytes;
+
+            if (data is byte[] bytes)
+            {
+                var base64 = Convert.ToBase64String(bytes);
+                plainBytes = Encoding.UTF8.GetBytes($"\"{base64}\"");
+            }
+            else
+            {
+                plainBytes = JsonSerializer.SerializeToUtf8Bytes(data!);
+            }
 
             var nonce = new byte[opts.NonceSize];
             RandomNumberGenerator.Fill(nonce);
@@ -123,6 +134,15 @@ namespace Crossdyne.Security.Cryptography
             {
                 using var aes = new AesGcm(key, opts.TagSize);
                 aes.Decrypt(nonce, cipherText, tag, plainBytes, opts.AssociatedData ?? ReadOnlySpan<byte>.Empty);
+
+                if (typeof(T) == typeof(byte[]))
+                {
+                    var jsonString = Encoding.UTF8.GetString(plainBytes);
+                    var base64 = JsonSerializer.Deserialize<string>(jsonString);
+                    if (base64 == null) return default;
+                    var resultBytes = Convert.FromBase64String(base64);
+                    return (T?)(object?)resultBytes;
+                }
 
                 return JsonSerializer.Deserialize<T>(plainBytes);
             }
