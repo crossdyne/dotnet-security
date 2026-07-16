@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Security.Cryptography;
 using Crossdyne.Security.Abstractions;
+using Crossdyne.Security.Configuration;
 using Crossdyne.Security.Cryptography;
 using Crossdyne.Security.Exceptions;
 using Crossdyne.Security.Utilities;
@@ -20,8 +21,9 @@ namespace Crossdyne.Security.Srp.Client
         /// <param name="saltBase64">Server salt (standard Base64).</param>
         /// <param name="bBase64">Server public ephemeral B (standard Base64).</param>
         /// <param name="ctx">SRP context (hash algorithm, N, g, etc.).</param>
+        /// <param name="cryptoVersion">CryptoVersion Kdf, V1 use default.</param>
         /// <returns>Tuple (A, M1, sessionKeyK) where A and M1 are standard Base64.</returns>
-        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx)    
+        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx, CryptoVersion cryptoVersion)    
         {
             KeyDerivationService keyDerivationService = new();
 
@@ -31,7 +33,7 @@ namespace Crossdyne.Security.Srp.Client
 
             try
             {
-                authHashBytes = keyDerivationService.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName);
+                authHashBytes = keyDerivationService.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName, cryptoVersion);
 
                 BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);
 

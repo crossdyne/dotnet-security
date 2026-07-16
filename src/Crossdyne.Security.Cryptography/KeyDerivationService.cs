@@ -34,12 +34,12 @@ namespace Crossdyne.Security.Cryptography
         /// <param name="identity"></param>
         /// <param name="password"></param>
         /// <param name="salt"></param>
-        /// <param name="options">KDF options; null uses default.</param>
+        /// <param name="version">Crypto version; V1 uses default.</param>
         /// <exception cref="ArgumentException">Password null/empty.</exception>
         /// <exception cref="InvalidKeyException">Salt null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Invalid options.</exception>
         /// <exception cref="SecurityException">Derivation error.</exception>
-        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, KdfOptions? options = null)
+        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, CryptoVersion version)
         {
             if (string.IsNullOrWhiteSpace(identity))
                 throw new ArgumentException("Identity cannot be null or empty.", nameof(identity));
@@ -53,7 +53,8 @@ namespace Crossdyne.Security.Cryptography
             if (salt.Length < 16)
                 throw new InvalidKeyException("Salt must be at least 16 bytes.");
 
-            var opts = options ?? KdfOptions.Default;
+            CryptoProfile profile = CryptoProfileRegistry.GetProfile(version);
+            KdfOptions opts = profile.KdfOptions;
             opts.Validate();
 
             string combinedPassword = $"{identity}:{password}";
@@ -92,13 +93,13 @@ namespace Crossdyne.Security.Cryptography
         /// <param name="password"></param>
         /// <param name="salt"></param>
         /// <param name="srpHashAlgorithm"></param>
-        /// <param name="options"></param>
+         /// <param name="version">Crypto version; V1 uses default.</param>
         /// <returns>Raw hash bytes for use as SRP verifier input (x).</returns>
         /// <exception cref="ArgumentException">Password null/empty, or unsupported hash.</exception>
         /// <exception cref="InvalidKeyException">Salt null.</exception>
         /// <exception cref="SecurityException">Derivation error.</exception>
         /// </summary>
-        public byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm,  KdfOptions? options = null)
+        public byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm, CryptoVersion version)
         {
             if (string.IsNullOrWhiteSpace(identity))
                 throw new ArgumentException("Identity cannot be null or empty.", nameof(identity));
@@ -112,7 +113,8 @@ namespace Crossdyne.Security.Cryptography
             if (salt.Length < 16)
                 throw new InvalidKeyException("Salt must be at least 16 bytes.");
 
-            var opts = options ?? KdfOptions.Default;
+            CryptoProfile profile = CryptoProfileRegistry.GetProfile(version);
+            KdfOptions opts = profile.KdfOptions;
             opts.Validate();
 
             int hashSize = GetHashSizeBytes(srpHashAlgorithm);

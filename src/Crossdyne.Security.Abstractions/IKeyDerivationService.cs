@@ -24,12 +24,12 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="identity"></param>
         /// <param name="password"></param>
         /// <param name="salt"></param>
-        /// <param name="options">KDF options; null uses default.</param>
+         /// <param name="version">Crypto version; V1 uses default.</param>
         /// <exception cref="ArgumentException">Password null/empty.</exception>
         /// <exception cref="InvalidKeyException">Salt null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Invalid options.</exception>
         /// <exception cref="SecurityException">Derivation error.</exception>
-        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, KdfOptions? options = null);
+        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, CryptoVersion version);
         
         /// <summary>
         /// Derives an SRP-compatible authentication hash (output size = hash output length).
@@ -39,12 +39,12 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="password"></param>
         /// <param name="salt"></param>
         /// <param name="srpHashAlgorithm"></param>
-        /// <param name="options"></param>
+        /// <param name="version">Crypto version; V1 uses default.</param>
         /// <returns>Raw hash bytes for use as SRP verifier input (x).</returns>
         /// <exception cref="ArgumentException">Password null/empty, or unsupported hash.</exception>
         /// <exception cref="InvalidKeyException">Salt null.</exception>
         /// <exception cref="SecurityException">Derivation error.</exception>
         /// </summary>
-        byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm,  KdfOptions? options = null);
+        byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm, CryptoVersion version);
     }
 }
