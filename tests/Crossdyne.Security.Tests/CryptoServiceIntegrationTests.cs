@@ -48,11 +48,9 @@ namespace Crossdyne.Security.Tests
             };
 
             var key = _service.GenerateRandomBytes(SecurityConstants.KeySizeBytes);
-            var aad = System.Text.Encoding.UTF8.GetBytes("env:production");
-            var options = AesGcmOptions.Create().WithAssociatedData(aad).Build();
 
-            var encrypted = _service.EncryptedData(config, key, options);
-            var decrypted = _service.DecryptData<Dictionary<string, string>>(encrypted, key, options);
+            var encrypted = _service.EncryptedData(config, key);
+            var decrypted = _service.DecryptData<Dictionary<string, string>>(encrypted, key);
 
             Assert.Equal(config.Count, decrypted?.Count);
             Assert.Equal(config["DbConnectionString"], decrypted?["DbConnectionString"]);

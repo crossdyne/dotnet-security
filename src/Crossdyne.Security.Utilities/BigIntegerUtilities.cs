@@ -16,21 +16,19 @@ namespace Crossdyne.Security.Utilities
         /// <exception cref="ArgumentException">Length &lt;= 0.</exception>
         public static byte[] ToFixedLengthBytes(BigInteger value, int length)
         {
-            if (length <= 0) throw 
-                new ArgumentException("The length must be positive.", nameof(length));
+            if (length <= 0) 
+                throw new ArgumentException("The length must be positive.", nameof(length));
 
             byte[] bytes = value.ToByteArray(isUnsigned: true, isBigEndian: true);
 
             if (bytes.Length == length)
                 return bytes;
 
-            byte[] result = new byte[length];
-
             if (bytes.Length > length)
-                Buffer.BlockCopy(bytes, bytes.Length - length, result, 0, length);
-            else
-                Buffer.BlockCopy(bytes, 0, result, length - bytes.Length, bytes.Length);
+                throw new ArgumentException($"Value byte length ({bytes.Length}) exceeds expected length ({length}). Possible data corruption or context mismatch.", nameof(value));
 
+            byte[] result = new byte[length];
+            Buffer.BlockCopy(bytes, 0, result, length - bytes.Length, bytes.Length);
             return result;
         }
 

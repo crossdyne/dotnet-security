@@ -17,6 +17,7 @@ namespace Crossdyne.Security.Tests
         private const string TestLogin = "user@example.com";
         private const string TestPassword = "MyStr0ng!P@ssw0rd2024";
         private readonly byte[] _testSalt;
+        private readonly CryptoVersion CryptoVersion = CryptoVersion.V1;
 
         public SrpServerServiceTests()
         {
@@ -30,7 +31,7 @@ namespace Crossdyne.Security.Tests
         private byte[] GenerateVerifierBytes(string login, string password, byte[] salt)
         {
             var context = SrpHelper.GetSrpContext();
-            var authHash = _kdf.DeriveAuthHashForSrp(login, password, salt, context.HashAlgorithmName);
+            var authHash = _kdf.DeriveAuthHashForSrp(login, password, salt, context.HashAlgorithmName, CryptoVersion);
             var x = new BigInteger(authHash, isBigEndian: true, isUnsigned: true);
             var v = BigInteger.ModPow(context.G, x, context.N);
             return SrpEncoding.ToModulusBytes(context, v);
@@ -60,7 +61,7 @@ namespace Crossdyne.Security.Tests
             var client = new Srp.Client.SrpClientService();
             var saltBase64 = Convert.ToBase64String(salt).Replace('+', '-').Replace('/', '_');
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
-            return client.GenerateSrpProof(login, password, saltBase64, B_base64, context);
+            return client.GenerateSrpProof(login, password, saltBase64, B_base64, context, CryptoVersion);
         }
 
         #endregion
@@ -123,18 +124,17 @@ namespace Crossdyne.Security.Tests
         }
 
         [Fact]
-        public void GetSrpChallenge_EmptyVerifier_ProducesValidButInsecureSession()
+        public void GetSrpChallenge_EmptyVerifier_ThrowsSrpVerificationException()
         {
-            // Arrange: Empty verifier (edge case)
             var context = SrpHelper.GetSrpContext();
             var emptyVerifier = Array.Empty<byte>();
 
-            // Act
-            var session = _server.GetSrpChallenge(TestLogin, emptyVerifier, _testSalt, context);
+            var exception = Assert.Throws<SrpVerificationException>(() => 
+                _server.GetSrpChallenge(TestLogin, emptyVerifier, _testSalt, context));
 
-            // Assert: Should not throw, but produces insecure state
-            Assert.NotNull(session);
+            Assert.Contains("corrupted", exception.Message);
         }
+
 
         #endregion
 
@@ -386,17 +386,16 @@ namespace Crossdyne.Security.Tests
         }
 
         [Fact]
-        public void GetSrpChallenge_VerifierLargerThanModulus_TrimsCorrectly()
+        public void GetSrpChallenge_VerifierLargerThanModulus_ThrowsSrpVerificationException()
         {
             var context = SrpHelper.GetSrpContext();
-            // Arrange: Create verifier that's larger than ModulusSize when serialized
-            var largeV = context.N * 2; // Larger than N
+            var largeV = context.N * 2;
             var largeVerifierBytes = largeV.ToByteArray(isUnsigned: true, isBigEndian: true);
- 
-            var session = _server.GetSrpChallenge(TestLogin, largeVerifierBytes, _testSalt, context);
 
-            var BBytes = session.PublicKeyB;
-            Assert.Equal(context.ModulusSize, BBytes.Length);
+            var exception = Assert.Throws<SrpVerificationException>(() => 
+                _server.GetSrpChallenge(TestLogin, largeVerifierBytes, _testSalt, context));
+
+            Assert.Contains("corrupted", exception.Message);
         }
 
         #endregion

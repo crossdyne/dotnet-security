@@ -26,18 +26,32 @@ namespace Crossdyne.Security.Srp.Server
 
             BigInteger v = new(verifierBytes, isUnsigned: true, isBigEndian: true);
 
+            if (v <= 0 || v >= ctx.N)
+                throw new SrpVerificationException("The verifier is corrupted");
+
             int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);
+
             byte[] bBytes;
             BigInteger B;
-            do
+
+            while (true)
             {
                 bBytes = new byte[privateKeySize];
                 RandomNumberGenerator.Fill(bBytes);
                 BigInteger b = new(bBytes, isUnsigned: true, isBigEndian: true);
 
+                if (b == 0)
+                    continue;
+
                 BigInteger gB = BigInteger.ModPow(ctx.G, b, ctx.N);
                 B = (ctx.K * v + gB) % ctx.N;
-            } while (B == 0);
+
+                if (B != 0)
+                    break;
+            }
+
+            if (B >= ctx.N)
+                throw new SrpVerificationException("Invalid server public key B.");
 
             var session = new SrpSessionState(
                 login,
@@ -66,7 +80,7 @@ namespace Crossdyne.Security.Srp.Server
             BigInteger v = new(sessionState.Verifier, isUnsigned: true, isBigEndian: true);
             BigInteger B = new(sessionState.PublicKeyB, isUnsigned: true, isBigEndian: true);
 
-            if (v <= 0)
+            if (v <= 0 || v >= ctx.N)
                 throw new SrpVerificationException("The verifier is corrupted");
 
             if (A % ctx.N == 0)
@@ -82,6 +96,9 @@ namespace Crossdyne.Security.Srp.Server
 
             BigInteger vU = BigInteger.ModPow(v, u, ctx.N);
             BigInteger S = BigInteger.ModPow((A * vU) % ctx.N, b, ctx.N);
+            
+            if (S == 0)
+                throw new SecurityException("Critical error: shared secret S is zero (possible malicious A).");
 
             byte[] sessionKeyK = SrpEncoding.ComputeSessionKey(ctx, S);
 

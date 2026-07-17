@@ -1,3 +1,5 @@
+using Crossdyne.Security.Configuration;
+
 namespace Crossdyne.Security.Abstractions
 {
     /// <summary>
@@ -19,10 +21,11 @@ namespace Crossdyne.Security.Abstractions
         /// <param name="ctx">SRP context.</param>
         /// <param name="login">User login.</param>
         /// <param name="password">Plaintext password.</param>
-        /// <param name="saltBase64">Server salt (URL-safe Base64).</param>
-        /// <param name="bBase64">Server public B (URL-safe Base64).</param>
+        /// <param name="saltBase64">Server salt (standard Base64).</param>
+        /// <param name="bBase64">Server public ephemeral B (standard Base64).</param>
+        /// <param name="cryptoVersion">CryptoVersion Kdf, V1 use default.</param>
         /// <returns>Tuple (A, M1, S) as Base64 strings.</returns>
-        (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx);
+        (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx, CryptoVersion cryptoVersion);
 
         /// <summary>
         /// Verifies the server proof M2.
