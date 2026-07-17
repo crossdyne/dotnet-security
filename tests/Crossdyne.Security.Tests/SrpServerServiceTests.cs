@@ -17,6 +17,7 @@ namespace Crossdyne.Security.Tests
         private const string TestLogin = "user@example.com";
         private const string TestPassword = "MyStr0ng!P@ssw0rd2024";
         private readonly byte[] _testSalt;
+        private readonly CryptoVersion CryptoVersion = CryptoVersion.V1;
 
         public SrpServerServiceTests()
         {
@@ -30,7 +31,7 @@ namespace Crossdyne.Security.Tests
         private byte[] GenerateVerifierBytes(string login, string password, byte[] salt)
         {
             var context = SrpHelper.GetSrpContext();
-            var authHash = _kdf.DeriveAuthHashForSrp(login, password, salt, context.HashAlgorithmName);
+            var authHash = _kdf.DeriveAuthHashForSrp(login, password, salt, context.HashAlgorithmName, CryptoVersion);
             var x = new BigInteger(authHash, isBigEndian: true, isUnsigned: true);
             var v = BigInteger.ModPow(context.G, x, context.N);
             return SrpEncoding.ToModulusBytes(context, v);
@@ -60,7 +61,7 @@ namespace Crossdyne.Security.Tests
             var client = new Srp.Client.SrpClientService();
             var saltBase64 = Convert.ToBase64String(salt).Replace('+', '-').Replace('/', '_');
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
-            return client.GenerateSrpProof(login, password, saltBase64, B_base64, context);
+            return client.GenerateSrpProof(login, password, saltBase64, B_base64, context, CryptoVersion);
         }
 
         #endregion

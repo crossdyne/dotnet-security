@@ -12,6 +12,7 @@ namespace Crossdyne.Security.Tests
         private const string TestLogin = "TestLogin";
         private const string _testPassword = "MyStr0ng!P@ssw0rd";
         private readonly byte[] _testSalt;
+        private readonly CryptoVersion CryptoVersion = CryptoVersion.V1;
 
         public KeyDerivationServiceTests()
         {
@@ -24,7 +25,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void DeriveKeysFromPassword_WithDefaultOptions_ReturnsValidKeys()
         {
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt);
+            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, CryptoVersion);
 
             Assert.NotNull(kek);
             Assert.Equal(SecurityConstants.KeySizeBytes, kek.Length);
@@ -38,8 +39,8 @@ namespace Crossdyne.Security.Tests
             var password = "consistent_password";
             var salt = Encoding.UTF8.GetBytes("fixed_salt_32_bytes!!");
 
-            var (kek1, hash1) = _service.DeriveKeysFromPassword(TestLogin, password, salt);
-            var (kek2, hash2) = _service.DeriveKeysFromPassword(TestLogin, password, salt);
+            var (kek1, hash1) = _service.DeriveKeysFromPassword(TestLogin, password, salt, CryptoVersion);
+            var (kek2, hash2) = _service.DeriveKeysFromPassword(TestLogin, password, salt, CryptoVersion);
 
             Assert.True(kek1.SequenceEqual(kek2), "KEK should be deterministic");
             Assert.True(hash1 == hash2, "AuthHash should be deterministic");
@@ -48,8 +49,8 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void DeriveKeysFromPassword_DifferentPasswords_ProducesDifferentKeys()
         {
-            var (kek1, hash1) = _service.DeriveKeysFromPassword(TestLogin, "password1", _testSalt);
-            var (kek2, hash2) = _service.DeriveKeysFromPassword(TestLogin, "password2", _testSalt);
+            var (kek1, hash1) = _service.DeriveKeysFromPassword(TestLogin, "password1", _testSalt, CryptoVersion);
+            var (kek2, hash2) = _service.DeriveKeysFromPassword(TestLogin, "password2", _testSalt, CryptoVersion);
         
             Assert.False(kek1.SequenceEqual(kek2), "Different passwords should produce different KEKs");
             Assert.True(hash1 != hash2, "Different passwords should produce different AuthHashes");
@@ -61,8 +62,8 @@ namespace Crossdyne.Security.Tests
             var salt1 = RandomNumberGenerator.GetBytes(32);
             var salt2 = RandomNumberGenerator.GetBytes(32);
         
-            var (kek1, hash1) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, salt1);
-            var (kek2, hash2) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, salt2);
+            var (kek1, hash1) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, salt1, CryptoVersion);
+            var (kek2, hash2) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, salt2, CryptoVersion);
         
             Assert.False(kek1.SequenceEqual(kek2), "Different salts should produce different KEKs");
             Assert.True(hash1 != hash2, "Different salts should produce different AuthHashes");
@@ -78,7 +79,7 @@ namespace Crossdyne.Security.Tests
         [InlineData("   ")]
         public void DeriveKeysFromPassword_InvalidPassword_ThrowsArgumentException(string? invalidPassword)
         {
-            var exception = Assert.Throws<ArgumentException>(() => _service.DeriveKeysFromPassword(TestLogin, invalidPassword!, _testSalt));
+            var exception = Assert.Throws<ArgumentException>(() => _service.DeriveKeysFromPassword(TestLogin, invalidPassword!, _testSalt, CryptoVersion));
             
             Assert.Equal("password", exception.ParamName);
             Assert.Contains("Password cannot be null or empty", exception.Message);
@@ -87,7 +88,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void DeriveKeysFromPassword_NullSalt_ThrowsInvalidKeyException()
         {
-            var exception = Assert.Throws<InvalidKeyException>(() => _service.DeriveKeysFromPassword(TestLogin, _testPassword, null!));
+            var exception = Assert.Throws<InvalidKeyException>(() => _service.DeriveKeysFromPassword(TestLogin, _testPassword, null!, CryptoVersion));
             
             Assert.Contains("Salt must be not null", exception.Message);
         }
@@ -106,20 +107,6 @@ namespace Crossdyne.Security.Tests
             Assert.Equal("value", exception.ParamName);
             Assert.Contains("must be at least", exception.Message);
             Assert.Contains(SecurityConstants.Pbkdf2IterationsMinimum.ToString(), exception.Message);
-        }
-
-        #endregion
-
-         #region CryptoOptions Tests
-
-        [Fact]
-        public void DeriveKeysFromPassword_WithNullOptions_UsesDefaults()
-        {
-            var (kek1, hash1) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, options: null);
-            var (kek2, hash2) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt); 
-
-            Assert.True(kek1.SequenceEqual(kek2));
-            Assert.Equal(hash1, hash2);
         }
 
         #endregion
@@ -145,7 +132,7 @@ namespace Crossdyne.Security.Tests
             // so we can't test the clearing directly, but we can 
             // verify that the returned string is still valid.
             
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt);
+            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, CryptoVersion);
 
             // Assert
             // If clearing broke the logic, Base64 conversion would fail or return wrong data
@@ -161,7 +148,7 @@ namespace Crossdyne.Security.Tests
             // Similar to above: we verify the output is correct,
             // which implies the finally block didn't corrupt the logic.
 
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt);
+            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, _testPassword, _testSalt, CryptoVersion);
 
             Assert.NotNull(kek);
             Assert.NotNull(authHash);
@@ -193,7 +180,7 @@ namespace Crossdyne.Security.Tests
         {
             var unicodePassword = "Пароль🔐密码🔑";
 
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, unicodePassword, _testSalt);
+            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, unicodePassword, _testSalt, CryptoVersion);
 
             Assert.NotNull(kek);
             Assert.NotNull(authHash);
@@ -206,7 +193,7 @@ namespace Crossdyne.Security.Tests
             var emptySalt = Array.Empty<byte>();
 
             var exception = Assert.Throws<InvalidKeyException>(() => 
-                _service.DeriveKeysFromPassword(TestLogin, _testPassword, emptySalt));
+                _service.DeriveKeysFromPassword(TestLogin, _testPassword, emptySalt, CryptoVersion));
             
             Assert.Contains("at least 16 bytes", exception.Message);
         }
@@ -216,7 +203,7 @@ namespace Crossdyne.Security.Tests
         {
             var longPassword = new string('A', 10_000);
 
-            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, longPassword, _testSalt);
+            var (kek, authHash) = _service.DeriveKeysFromPassword(TestLogin, longPassword, _testSalt, CryptoVersion);
 
             Assert.NotNull(kek);
             Assert.NotNull(authHash);

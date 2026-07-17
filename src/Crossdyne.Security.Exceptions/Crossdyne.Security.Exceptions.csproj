@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Exceptions</PackageId>
-    <Version>0.4.0-beta.1</Version>
+    <Version>0.5.0-beta.1</Version>
     <Description>Custom exception types for Crossdyne.Security library. Provides specialized exceptions for authentication failures, cryptographic errors, SRP protocol violations, and security-related error handling.</Description>
     <PackageTags>security;exceptions;error-handling;authentication-errors;crypto-errors;srp-exceptions</PackageTags>
     

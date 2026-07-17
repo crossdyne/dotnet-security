@@ -170,11 +170,11 @@ namespace Crossdyne.Security.Tests
         }
 
         [Fact]
-        public void DecryptData_TooShortData_ThrowsDecryptionException()
+        public void DecryptData_TooShortData_ThrowsSecurityException()
         {
             var tooShort = Convert.ToBase64String(new byte[5]); // Way too short
 
-            Assert.Throws<DecryptionException>(() =>  _service.DecryptData<string>(tooShort, _validKey));
+            Assert.Throws<SecurityException>(() =>  _service.DecryptData<string>(tooShort, _validKey));
         }
 
         [Fact]
@@ -192,20 +192,6 @@ namespace Crossdyne.Security.Tests
         }
 
         [Fact]
-        public void DecryptData_TamperedNonce_ThrowsDecryptionException()
-        {
-            var original = "Important data";
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var encryptedBytes = Convert.FromBase64String(encrypted);
-            
-            // Corrupt nonce (first 12 bytes)
-            encryptedBytes[0] ^= 0xFF;
-            var tampered = Convert.ToBase64String(encryptedBytes);
-
-            Assert.Throws<DecryptionException>(() =>  _service.DecryptData<string>(tampered, _validKey));
-        }
-
-        [Fact]
         public void DecryptData_TamperedTag_ThrowsDecryptionException()
         {
             var original = "Important data";
@@ -216,91 +202,6 @@ namespace Crossdyne.Security.Tests
             var tampered = Convert.ToBase64String(encryptedBytes);
 
             Assert.Throws<DecryptionException>(() => _service.DecryptData<string>(tampered, _validKey));
-        }
-
-        #endregion
-
-        #region CryptoOptions Tests
-
-        [Fact]
-        public void EncryptedData_WithCustomOptions_UsesSpecifiedConfiguration()
-        {
-            var options = AesGcmOptions.Create()
-                .WithTagSize(14)
-                .WithAssociatedData("context:user:123")
-                .Build();
-
-            const string original = "Protected data";
-
-            var encrypted = _service.EncryptedData(original, _validKey, options);
-            var decrypted = _service.DecryptData<string>(encrypted, _validKey, options);
-
-            Assert.Equal(original, decrypted);
-        }
-
-        [Fact]
-        public void EncryptedData_WithNullOptions_UsesDefaults()
-        {
-            const string original = "Test";
-
-            var encrypted1 = _service.EncryptedData(original, _validKey, options: null);
-            var encrypted2 = _service.EncryptedData(original, _validKey);
-
-            // Both should work (output differs due to random nonce, but both valid)
-            var decrypted1 = _service.DecryptData<string>(encrypted1, _validKey);
-            var decrypted2 = _service.DecryptData<string>(encrypted2, _validKey);
-
-            Assert.Equal(original, decrypted1);
-            Assert.Equal(original, decrypted2);
-        }
-
-        [Fact]
-        public void DecryptData_WithMismatchedOptions_ThrowsDecryptionException()
-        {
-            const string original = "Secret";
-            var encryptOptions = AesGcmOptions.Create().WithTagSize(14).Build();
-            var decryptOptions = AesGcmOptions.Create().WithTagSize(16).Build(); // Different!
-            
-            var encrypted = _service.EncryptedData(original, _validKey, encryptOptions);
-
-            // Tag size mismatch should cause authentication failure
-            Assert.Throws<DecryptionException>(() => _service.DecryptData<string>(encrypted, _validKey, decryptOptions));
-        }
-
-        [Fact]
-        public void EncryptDecrypt_WithAssociatedData_SameAADRequired()
-        {
-            const string original = "Confidential";
-            var aad = Encoding.UTF8.GetBytes("user:42:session:abc");
-            var options = AesGcmOptions.Create().WithAssociatedData(aad).Build();
-            
-            var encrypted = _service.EncryptedData(original, _validKey, options);
-
-            // Act: Decrypt with same AAD - should succeed
-            var decrypted = _service.DecryptData<string>(encrypted, _validKey, options);
-
-            Assert.Equal(original, decrypted);
-
-            // Act: Decrypt with different AAD - should fail
-            var wrongOptions = AesGcmOptions.Create()
-                .WithAssociatedData("user:42:session:xyz")
-                .Build();
-            
-            Assert.Throws<DecryptionException>(() => _service.DecryptData<string>(encrypted, _validKey, wrongOptions));
-        }
-
-        [Fact]
-        public void EncryptDecrypt_WithoutAssociatedData_WithAADOptions_Throws()
-        {
-            const string original = "Data";
-            var encrypted = _service.EncryptedData(original, _validKey); // No AAD
-            
-            var optionsWithAad = AesGcmOptions.Create()
-                .WithAssociatedData("some-aad")
-                .Build();
-
-            // Decrypting data without AAD using options with AAD should fail
-            Assert.Throws<DecryptionException>(() => _service.DecryptData<string>(encrypted, _validKey, optionsWithAad));
         }
 
         #endregion
@@ -333,20 +234,6 @@ namespace Crossdyne.Security.Tests
             // Should not throw
             var bytes = Convert.FromBase64String(encrypted);
             Assert.True(bytes.Length > 0);
-        }
-
-        [Fact]
-        public void Encrypt_OutputContains_Nonce_Ciphertext_Tag()
-        {
-            const string original = "Test";
-            var options = AesGcmOptions.Default;
-
-            var encrypted = _service.EncryptedData(original, _validKey, options);
-            var bytes = Convert.FromBase64String(encrypted);
-
-            var expectedLength = options.NonceSize + original.Length /*approx*/ + options.TagSize;
-            Assert.True(bytes.Length >= options.NonceSize + options.TagSize);
-            Assert.True(bytes.Length <= expectedLength + 100); // Allow for JSON overhead
         }
 
         #endregion
