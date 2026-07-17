@@ -1,6 +1,5 @@
 using System.Numerics;
 using System.Security.Cryptography;
-using Crossdyne.Security.Abstractions;
 using Crossdyne.Security.Configuration;
 using Crossdyne.Security.Cryptography;
 using Crossdyne.Security.Srp.Client;
@@ -17,7 +16,8 @@ namespace Crossdyne.Security.Tests
         private const string TestPassword = "MyStr0ng!P@ssw0rd2024";
         private readonly byte[] _testSalt;
         private readonly string _testSaltBase64;
-
+        private readonly CryptoVersion CryptoVersion = CryptoVersion.V1;
+        
         public SrpClientServiceTests()
         {
             _client = new SrpClientService();
@@ -30,7 +30,7 @@ namespace Crossdyne.Security.Tests
 
         private (string AuthHash, byte[] AuthHashBytes, BigInteger X) DeriveAuthComponents(string login, string password, byte[] salt)
         {
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(login, password, salt);
+            var (_, authHash) = _kdf.DeriveKeysFromPassword(login, password, salt, CryptoVersion);
             var authHashBytes = Convert.FromBase64String(authHash);
             var x = new BigInteger(authHashBytes, isBigEndian: true, isUnsigned: true);
             return (authHash, authHashBytes, x);
@@ -62,7 +62,7 @@ namespace Crossdyne.Security.Tests
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
 
             // Act
-            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context, CryptoVersion);
 
             // Assert
             Assert.NotNull(A);
@@ -88,8 +88,8 @@ namespace Crossdyne.Security.Tests
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
 
             // Act
-            var (A1, M1_1, S1) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
-            var (A2, M1_2, S2) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
+            var (A1, M1_1, S1) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context, CryptoVersion);
+            var (A2, M1_2, S2) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context, CryptoVersion);
 
             // Assert
             // A should differ (random 'a' each time)
@@ -116,7 +116,7 @@ namespace Crossdyne.Security.Tests
                 .Replace('/', '_');
 
             var context = SrpHelper.GetSrpContext();
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, saltWithSpecialChars);
+            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, saltWithSpecialChars, CryptoVersion);
             var authHashBytes = Convert.FromBase64String(authHash);
             var x = new BigInteger(authHashBytes, isBigEndian: true, isUnsigned: true);
             var v = BigInteger.ModPow(context.G, x, context.N);
@@ -125,7 +125,7 @@ namespace Crossdyne.Security.Tests
             var B = GenerateValidB(v, bBytes);
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
 
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64Url, B_base64, context);
+            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, TestPassword, saltBase64Url, B_base64, context, CryptoVersion);
 
             Assert.NotNull(A);
             Assert.NotNull(M1);
@@ -149,7 +149,7 @@ namespace Crossdyne.Security.Tests
 
             // Act & Assert
             Assert.Throws<ArgumentException>(() => 
-                _client.GenerateSrpProof(TestLogin, invalidPassword!, _testSaltBase64, B_base64, context));
+                _client.GenerateSrpProof(TestLogin, invalidPassword!, _testSaltBase64, B_base64, context, CryptoVersion));
         }
 
         #endregion
@@ -160,7 +160,7 @@ namespace Crossdyne.Security.Tests
         public void GenerateSrpVerifier_ValidAuthHash_ReturnsValidBase64()
         {
             // Arrange
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _testSalt);
+            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _testSalt, CryptoVersion);
 
             // Act
             var context = SrpHelper.GetSrpContext();
@@ -176,7 +176,7 @@ namespace Crossdyne.Security.Tests
         public void GenerateSrpVerifier_SameAuthHash_ProducesSameVerifier()
         {
             // Arrange
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _testSalt);
+            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _testSalt, CryptoVersion);
 
             // Act
             var context = SrpHelper.GetSrpContext();
@@ -191,8 +191,8 @@ namespace Crossdyne.Security.Tests
         public void GenerateSrpVerifier_DifferentPasswords_ProducesDifferentVerifiers()
         {
             // Arrange
-            var (_, authHash1) = _kdf.DeriveKeysFromPassword(TestLogin, "password1", _testSalt);
-            var (_, authHash2) = _kdf.DeriveKeysFromPassword(TestLogin, "password2", _testSalt);
+            var (_, authHash1) = _kdf.DeriveKeysFromPassword(TestLogin, "password1", _testSalt, CryptoVersion);
+            var (_, authHash2) = _kdf.DeriveKeysFromPassword(TestLogin, "password2", _testSalt, CryptoVersion);
 
             // Act
             var context = SrpHelper.GetSrpContext();
@@ -212,7 +212,7 @@ namespace Crossdyne.Security.Tests
         {
             // Arrange: Full SRP flow to get valid M2
             var context = SrpHelper.GetSrpContext();
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _testSalt);
+            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _testSalt, CryptoVersion);
             var authHashBytes = Convert.FromBase64String(authHash);
             var x = new BigInteger(authHashBytes, isBigEndian: true, isUnsigned: true);
             var v = BigInteger.ModPow(context.G, x, context.N);
@@ -221,7 +221,7 @@ namespace Crossdyne.Security.Tests
             var B = GenerateValidB(v, bBytes);
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
             
-            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context, CryptoVersion);
 
             var A_big = BigIntegerUtilities.FromBase64(A);
             var M1_bytes = Convert.FromBase64String(M1); // M1 теперь base64 от byte[]
@@ -239,7 +239,7 @@ namespace Crossdyne.Security.Tests
         {
             // Arrange
             var context = SrpHelper.GetSrpContext();
-            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _testSalt);
+            var (_, authHash) = _kdf.DeriveKeysFromPassword(TestLogin, TestPassword, _testSalt, CryptoVersion);
             var authHashBytes = Convert.FromBase64String(authHash);
             var x = new BigInteger(authHashBytes, isBigEndian: true, isUnsigned: true);
             var v = BigInteger.ModPow(context.G, x, context.N);
@@ -248,7 +248,7 @@ namespace Crossdyne.Security.Tests
             var B = GenerateValidB(v, bBytes);
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
             
-            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context);
+            var (A, M1, sessionKeyK) = _client.GenerateSrpProof(TestLogin, TestPassword, _testSaltBase64, B_base64, context, CryptoVersion);
             
             // Create invalid M2 (flip one bit)
             var validM2Bytes = SrpEncoding.ComputeM2(
@@ -283,7 +283,7 @@ namespace Crossdyne.Security.Tests
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
 
             // Act
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, largePassword, _testSaltBase64, B_base64, context);
+            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, largePassword, _testSaltBase64, B_base64, context, CryptoVersion);
 
             // Assert
             Assert.NotNull(A);
@@ -304,7 +304,7 @@ namespace Crossdyne.Security.Tests
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
 
             // Act
-            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, unicodePassword, _testSaltBase64, B_base64, context);
+            var (A, M1, S) = _client.GenerateSrpProof(TestLogin, unicodePassword, _testSaltBase64, B_base64, context, CryptoVersion);
 
             // Assert
             Assert.NotNull(A);
