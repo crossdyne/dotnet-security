@@ -13,7 +13,7 @@ namespace Crossdyne.Security.Cryptography
     /// <remarks>
     /// Encrypted data format (Base64): <c>[Nonce (N bytes)][Ciphertext][Tag (T bytes)]</c>.
     /// </remarks>
-    public class CryptoService : ICryptoServices
+    public class CryptoService : ICryptoService
     {
         #region Encrypted
 

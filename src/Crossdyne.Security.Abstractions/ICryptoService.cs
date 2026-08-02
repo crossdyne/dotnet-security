@@ -5,7 +5,7 @@ namespace Crossdyne.Security.Abstractions
     /// <summary>
     /// Provides AES-GCM encryption and decryption with JSON serialization. Thread-safe.
     /// </summary>
-    public interface ICryptoServices
+    public interface ICryptoService
     {
         /// <summary>
         /// Encrypts an object to a Base64 string with configurable AES-GCM options.

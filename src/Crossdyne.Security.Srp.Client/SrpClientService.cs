@@ -2,7 +2,6 @@ using System.Numerics;
 using System.Security.Cryptography;
 using Crossdyne.Security.Abstractions;
 using Crossdyne.Security.Configuration;
-using Crossdyne.Security.Cryptography;
 using Crossdyne.Security.Exceptions;
 using Crossdyne.Security.Utilities;
 
@@ -13,6 +12,18 @@ namespace Crossdyne.Security.Srp.Client
     /// </summary>
     public class SrpClientService : ISrpClient
     {
+        private readonly IKeyDerivationService _kdf;
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SrpClientService"/> class.
+        /// </summary>
+        /// <param name="kdf">The key derivation service used for SRP authentication hash generation.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="kdf"/> is <see langword="null"/>.</exception>
+        public SrpClientService(IKeyDerivationService kdf)
+        {
+            _kdf = kdf ?? throw new ArgumentNullException(nameof(kdf));
+        }
+
         /// <summary>
         /// Generates client proof (A, M1, session key S) from server challenge.
         /// </summary>
@@ -25,15 +36,13 @@ namespace Crossdyne.Security.Srp.Client
         /// <returns>Tuple (A, M1, sessionKeyK) where A and M1 are standard Base64.</returns>
         public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx, CryptoVersion cryptoVersion)    
         {
-            KeyDerivationService keyDerivationService = new();
-
             byte[] salt = BigIntegerUtilities.DecodeBase64ToBytes(saltBase64);
             byte[]? authHashBytes = null;
             byte[]? aBytes = null;
 
             try
             {
-                authHashBytes = keyDerivationService.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName, cryptoVersion);
+                authHashBytes = _kdf.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName, cryptoVersion);
 
                 BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);
 

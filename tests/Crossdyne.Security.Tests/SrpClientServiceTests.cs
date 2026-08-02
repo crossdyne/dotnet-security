@@ -20,8 +20,8 @@ namespace Crossdyne.Security.Tests
         
         public SrpClientServiceTests()
         {
-            _client = new SrpClientService();
             _kdf = new KeyDerivationService();
+            _client = new SrpClientService(_kdf);
             _testSalt = RandomNumberGenerator.GetBytes(32);
             _testSaltBase64 = Convert.ToBase64String(_testSalt).Replace('+', '-').Replace('/', '_');
         }
