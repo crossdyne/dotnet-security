@@ -21,30 +21,45 @@ namespace Crossdyne.Security.Abstractions
         /// Identity is hashed as-is. Caller must normalize (trim, lowercase, etc.) 
         /// before calling to ensure cross-platform consistency.
         /// </summary>
-        /// <param name="identity"></param>
-        /// <param name="password"></param>
-        /// <param name="salt"></param>
-         /// <param name="version">Crypto version; V1 uses default.</param>
-        /// <exception cref="ArgumentException">Password null/empty.</exception>
-        /// <exception cref="InvalidKeyException">Salt null.</exception>
+        /// <param name="identity">User identity. Must be normalized by caller.</param>
+        /// <param name="password">User password.</param>
+        /// <param name="salt">Random unique salt (at least 16 bytes).</param>
+        /// <param name="version">Crypto version; V1 uses default.</param>
+        /// <returns>
+        /// <c>Kek</c>: AES-256 key for data encryption.
+        /// <c>AuthHash</c>: Base64-encoded server verification hash.
+        /// </returns>
+        /// <exception cref="ArgumentException">Identity or password is null or empty.</exception>
+        /// <exception cref="InvalidKeyException">Salt is null or shorter than 16 bytes.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Invalid options.</exception>
         /// <exception cref="SecurityException">Derivation error.</exception>
-        public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, CryptoVersion version);
-        
+        (byte[] Kek, string AuthHash) DeriveKeysFromPassword(
+            string identity,
+            string password,
+            byte[] salt,
+            CryptoVersion version);
+
         /// <summary>
         /// Derives an SRP-compatible authentication hash (output size = hash output length).
         /// Identity is hashed as-is. Caller must normalize (trim, lowercase, etc.) 
         /// before calling to ensure cross-platform consistency.
-        /// <param name="identity"></param>
-        /// <param name="password"></param>
-        /// <param name="salt"></param>
-        /// <param name="srpHashAlgorithm"></param>
+        /// </summary>
+        /// <param name="identity">User identity. Must be normalized by caller.</param>
+        /// <param name="password">User password.</param>
+        /// <param name="salt">Random unique salt (at least 16 bytes).</param>
+        /// <param name="srpHashAlgorithm">Hash algorithm for SRP verifier.</param>
         /// <param name="version">Crypto version; V1 uses default.</param>
         /// <returns>Raw hash bytes for use as SRP verifier input (x).</returns>
-        /// <exception cref="ArgumentException">Password null/empty, or unsupported hash.</exception>
-        /// <exception cref="InvalidKeyException">Salt null.</exception>
+        /// <exception cref="ArgumentException">
+        /// Identity or password is null or empty, or hash algorithm is unsupported.
+        /// </exception>
+        /// <exception cref="InvalidKeyException">Salt is null or shorter than 16 bytes.</exception>
         /// <exception cref="SecurityException">Derivation error.</exception>
-        /// </summary>
-        byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm, CryptoVersion version);
+        byte[] DeriveAuthHashForSrp(
+            string identity,
+            string password,
+            byte[] salt,
+            HashAlgorithmName srpHashAlgorithm,
+            CryptoVersion version);
     }
 }

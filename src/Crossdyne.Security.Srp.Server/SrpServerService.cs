@@ -6,19 +6,10 @@ using Crossdyne.Security.Utilities;
 
 namespace Crossdyne.Security.Srp.Server
 {    
-    /// <summary>
-    /// Server-side SRP-6a: challenge generation, client proof verification, server proof creation.
-    /// </summary>
+    /// <inheritdoc />
     public class SrpServerService : ISrpServer
     {
-        /// <summary>
-        /// Generates server challenge B and session state from verifier.
-        /// </summary>
-        /// <param name="login">User login.</param>
-        /// <param name="verifierBytes">Stored verifier v as byte array.</param>
-        /// <param name="ctx">SRP context (hash, N, g, etc.).</param>
-        /// <param name="salt">Authentication hash generated during registration</param>
-        /// <returns><see cref="SrpSessionState"/> with private b, verifier, and public B.</returns>
+        /// <inheritdoc />
         public SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, byte[] salt, SrpContext ctx)
         {
             ArgumentNullException.ThrowIfNull(verifierBytes);
@@ -64,15 +55,7 @@ namespace Crossdyne.Security.Srp.Server
             return session;
         }
 
-        /// <summary>
-        /// Verifies client M1 proof and returns server M2 proof.
-        /// </summary>
-        /// <param name="sessionState">Server session state.</param>
-        /// <param name="a">Client public A (Base64).</param>
-        /// <param name="m1">Client proof M1 (Base64).</param>
-        /// <param name="ctx">SRP context.</param>
-        /// <returns>Server proof M2 as Base64 string.</returns>
-        /// <exception cref="SrpVerificationException">Verification failed or invalid input.</exception>
+        /// <inheritdoc />
         public string VerifySrpProof(SrpSessionState sessionState, string a, string m1, SrpContext ctx)
         {
             BigInteger A = new(Convert.FromBase64String(a), isUnsigned: true, isBigEndian: true);

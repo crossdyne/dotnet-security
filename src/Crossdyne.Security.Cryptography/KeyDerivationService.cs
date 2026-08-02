@@ -6,16 +6,11 @@ using Crossdyne.Security.Exceptions;
 
 namespace Crossdyne.Security.Cryptography
 {
-    /// <summary>
-    /// Two-stage key derivation: PBKDF2 (master key) → HKDF (sub-keys). Thread-safe.
-    /// </summary>
+    /// <inheritdoc />
     /// <remarks>
-    /// Derived sub-keys: KEK (AES-GCM) and AuthHash (server verification).
-    /// HKDF info strings ensure key separation.
-    /// Salts must be random, unique, and at least 16 bytes.
-    /// Sensitive buffers are cleared after use.
+    /// Implementation clears sensitive buffers via <see cref="CryptographicOperations.ZeroMemory"/>.
     /// </remarks>
-    public class KeyDerivationService: IKeyDerivationService
+    public class KeyDerivationService : IKeyDerivationService
     {
         private static int GetHashSizeBytes(HashAlgorithmName hashAlgorithm) => hashAlgorithm switch
         {
@@ -25,20 +20,10 @@ namespace Crossdyne.Security.Cryptography
             _ => throw new ArgumentException($"Unsupported hash algorithm: {hashAlgorithm.Name}", nameof(hashAlgorithm))
         };
 
-        /// <summary>
-        /// Full KDF configuration overload.
-        /// Derivation: PBKDF2(identity:password) → HKDF(KEK, AuthHash).
-        /// Identity is hashed as-is. Caller must normalize (trim, lowercase, etc.) 
-        /// before calling to ensure cross-platform consistency.
-        /// </summary>
-        /// <param name="identity"></param>
-        /// <param name="password"></param>
-        /// <param name="salt"></param>
-        /// <param name="version">Crypto version; V1 uses default.</param>
-        /// <exception cref="ArgumentException">Password null/empty.</exception>
-        /// <exception cref="InvalidKeyException">Salt null.</exception>
-        /// <exception cref="ArgumentOutOfRangeException">Invalid options.</exception>
-        /// <exception cref="SecurityException">Derivation error.</exception>
+        /// <inheritdoc />
+        /// <remarks>
+        /// Combines identity and password as <c>identity:password</c> before PBKDF2.
+        /// </remarks>
         public (byte[] Kek, string AuthHash) DeriveKeysFromPassword(string identity, string password, byte[] salt, CryptoVersion version)
         {
             if (string.IsNullOrWhiteSpace(identity))
@@ -85,20 +70,10 @@ namespace Crossdyne.Security.Cryptography
             }
         }
 
-        /// <summary>
-        /// Derives an SRP-compatible authentication hash (output size = hash output length).
-        /// Identity is hashed as-is. Caller must normalize (trim, lowercase, etc.) 
-        /// before calling to ensure cross-platform consistency.
-        /// <param name="identity"></param>
-        /// <param name="password"></param>
-        /// <param name="salt"></param>
-        /// <param name="srpHashAlgorithm"></param>
-         /// <param name="version">Crypto version; V1 uses default.</param>
-        /// <returns>Raw hash bytes for use as SRP verifier input (x).</returns>
-        /// <exception cref="ArgumentException">Password null/empty, or unsupported hash.</exception>
-        /// <exception cref="InvalidKeyException">Salt null.</exception>
-        /// <exception cref="SecurityException">Derivation error.</exception>
-        /// </summary>
+        /// <inheritdoc />
+        /// <remarks>
+        /// Output length equals the hash size of <paramref name="srpHashAlgorithm"/>.
+        /// </remarks>
         public byte[] DeriveAuthHashForSrp(string identity, string password, byte[] salt, HashAlgorithmName srpHashAlgorithm, CryptoVersion version)
         {
             if (string.IsNullOrWhiteSpace(identity))

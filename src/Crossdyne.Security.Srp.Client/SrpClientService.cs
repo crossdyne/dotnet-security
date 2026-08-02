@@ -7,9 +7,7 @@ using Crossdyne.Security.Utilities;
 
 namespace Crossdyne.Security.Srp.Client
 {
-    /// <summary>
-    /// Client-side SRP-6a implementation: proof generation, verifier creation, server M2 verification.
-    /// </summary>
+    /// <inheritdoc />
     public class SrpClientService : ISrpClient
     {
         private readonly IKeyDerivationService _kdf;
@@ -24,16 +22,11 @@ namespace Crossdyne.Security.Srp.Client
             _kdf = kdf ?? throw new ArgumentNullException(nameof(kdf));
         }
 
-        /// <summary>
-        /// Generates client proof (A, M1, session key S) from server challenge.
-        /// </summary>
-        /// <param name="login">User login.</param>
-        /// <param name="password">Plaintext password.</param>
-        /// <param name="saltBase64">Server salt (standard Base64).</param>
-        /// <param name="bBase64">Server public ephemeral B (standard Base64).</param>
-        /// <param name="ctx">SRP context (hash algorithm, N, g, etc.).</param>
-        /// <param name="cryptoVersion">CryptoVersion Kdf, V1 use default.</param>
-        /// <returns>Tuple (A, M1, sessionKeyK) where A and M1 are standard Base64.</returns>
+        /// <inheritdoc />
+        /// <remarks>
+        /// Derives authentication hash via <see cref="IKeyDerivationService.DeriveAuthHashForSrp"/>.
+        /// Sensitive buffers (auth hash and private key a) are cleared after use.
+        /// </remarks>
         public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx, CryptoVersion cryptoVersion)    
         {
             byte[] salt = BigIntegerUtilities.DecodeBase64ToBytes(saltBase64);
@@ -99,12 +92,7 @@ namespace Crossdyne.Security.Srp.Client
             }
         }
 
-        /// <summary>
-        /// Computes SRP verifier v = g^x mod N from the authentication hash.
-        /// </summary>
-        /// <param name="authHash">Auth hash (Base64).</param>
-        /// <param name="ctx">SRP context.</param>
-        /// <returns>Verifier as URL-safe Base64 string.</returns>
+        /// <inheritdoc />
         public string GenerateSrpVerifier(string authHash, SrpContext ctx)
         {
             byte[] authHashBytes = Convert.FromBase64String(authHash);
@@ -114,21 +102,13 @@ namespace Crossdyne.Security.Srp.Client
             return Convert.ToBase64String(SrpEncoding.ToModulusBytes(ctx, v));
         }
 
-        /// <summary>
-        /// Validates the server proof M2 to authenticate the server.
-        /// </summary>
-        /// <param name="publicA">Client public A (Base64).</param>
-        /// <param name="m1">Client proof M1 (Base64).</param>
-        /// <param name="sessionKeyK">Session key S (Base64).</param>
-        /// <param name="serverM2">Server proof M2 (Base64).</param>
-        /// <param name="ctx">SRP context.</param>
-        /// <returns>True if the server proof is valid.</returns>
+        /// <inheritdoc />
         public bool VerifyServerM2(string publicA, string m1, byte[] sessionKeyK, string serverM2, SrpContext ctx)
         {
             BigInteger A = BigIntegerUtilities.FromBase64(publicA);
             byte[] m1Bytes = BigIntegerUtilities.DecodeBase64ToBytes(m1);
 
-            byte[] computedM2Bytes = SrpEncoding.ComputeM2(ctx, A, m1Bytes, sessionKeyK);;
+            byte[] computedM2Bytes = SrpEncoding.ComputeM2(ctx, A, m1Bytes, sessionKeyK);
             byte[] serverM2Bytes = BigIntegerUtilities.DecodeBase64ToBytes(serverM2);
 
             return CryptographicOperations.FixedTimeEquals(computedM2Bytes, serverM2Bytes);
