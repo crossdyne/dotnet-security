@@ -27,8 +27,11 @@ namespace Crossdyne.Security.Srp.Client
         /// Derives authentication hash via <see cref="IKeyDerivationService.DeriveAuthHashForSrp"/>.
         /// Sensitive buffers (auth hash and private key a) are cleared after use.
         /// </remarks>
-        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpContext ctx, CryptoVersion cryptoVersion)    
+        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpGroup srpGroup, CryptoVersion cryptoVersion)    
         {
+            var srpProfile = SrpProfileRegistry.GetProfile(srpGroup);
+            var ctx = SrpContext.FromOptions(srpProfile.Options);
+
             byte[] salt = BigIntegerUtilities.DecodeBase64ToBytes(saltBase64);
             byte[]? authHashBytes = null;
             byte[]? aBytes = null;
@@ -93,8 +96,11 @@ namespace Crossdyne.Security.Srp.Client
         }
 
         /// <inheritdoc />
-        public string GenerateSrpVerifier(string authHash, SrpContext ctx)
+        public string GenerateSrpVerifier(string authHash, SrpGroup srpGroup)
         {
+            var srpProfile = SrpProfileRegistry.GetProfile(srpGroup);
+            var ctx = SrpContext.FromOptions(srpProfile.Options);
+
             byte[] authHashBytes = Convert.FromBase64String(authHash);
             BigInteger x = new(authHashBytes, isUnsigned: true, isBigEndian: true);
             BigInteger v = BigInteger.ModPow(ctx.G, x, ctx.N);
@@ -103,8 +109,11 @@ namespace Crossdyne.Security.Srp.Client
         }
 
         /// <inheritdoc />
-        public bool VerifyServerM2(string publicA, string m1, byte[] sessionKeyK, string serverM2, SrpContext ctx)
+        public bool VerifyServerM2(string publicA, string m1, byte[] sessionKeyK, string serverM2, SrpGroup srpGroup)
         {
+            var srpProfile = SrpProfileRegistry.GetProfile(srpGroup);
+            var ctx = SrpContext.FromOptions(srpProfile.Options);
+            
             BigInteger A = BigIntegerUtilities.FromBase64(publicA);
             byte[] m1Bytes = BigIntegerUtilities.DecodeBase64ToBytes(m1);
 

@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Security.Cryptography;
 using Crossdyne.Security.Abstractions;
+using Crossdyne.Security.Configuration;
 using Crossdyne.Security.Exceptions;
 using Crossdyne.Security.Utilities;
 
@@ -10,8 +11,11 @@ namespace Crossdyne.Security.Srp.Server
     public class SrpServerService : ISrpServer
     {
         /// <inheritdoc />
-        public SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, byte[] salt, SrpContext ctx)
+        public SrpSessionState GetSrpChallenge(string login, byte[] verifierBytes, byte[] salt, SrpGroup srpGroup)
         {
+            var srpProfile = SrpProfileRegistry.GetProfile(srpGroup);
+            var ctx = SrpContext.FromOptions(srpProfile.Options);
+
             ArgumentNullException.ThrowIfNull(verifierBytes);
             ArgumentException.ThrowIfNullOrEmpty(login);
 
@@ -56,8 +60,11 @@ namespace Crossdyne.Security.Srp.Server
         }
 
         /// <inheritdoc />
-        public string VerifySrpProof(SrpSessionState sessionState, string a, string m1, SrpContext ctx)
+        public string VerifySrpProof(SrpSessionState sessionState, string a, string m1, SrpGroup srpGroup)
         {
+            var srpProfile = SrpProfileRegistry.GetProfile(srpGroup);
+            var ctx = SrpContext.FromOptions(srpProfile.Options);
+
             BigInteger A = new(Convert.FromBase64String(a), isUnsigned: true, isBigEndian: true);
             BigInteger b = new(sessionState.PrivateKeyB, isUnsigned: true, isBigEndian: true);
             BigInteger v = new(sessionState.Verifier, isUnsigned: true, isBigEndian: true);
