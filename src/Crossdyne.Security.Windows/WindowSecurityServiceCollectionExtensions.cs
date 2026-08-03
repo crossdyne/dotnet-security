@@ -1,5 +1,6 @@
 using Crossdyne.Security.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Crossdyne.Security.Windows
 {
@@ -15,8 +16,8 @@ namespace Crossdyne.Security.Windows
         /// <returns>The same <see cref="IServiceCollection"/> so that additional calls can be chained.</returns>
         public static IServiceCollection AddCrossdyneWindowSecurity(this IServiceCollection services)
         {
-            services.AddSingleton<IDeviceIdentityService, DeviceIdentityService>();
-            services.AddSingleton<ISecureTokenStorage, WindowSecureTokenStorage>();
+            services.TryAddSingleton<IDeviceIdentityService, DeviceIdentityService>();
+            services.TryAddSingleton<ISecureTokenStorage, WindowSecureTokenStorage>();
 
             return services;
         }
