@@ -10,36 +10,21 @@ namespace Crossdyne.Security.Srp.Client
     /// <inheritdoc />
     public class SrpClientService : ISrpClient
     {
-        private readonly IKeyDerivationService _kdf;
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="SrpClientService"/> class.
-        /// </summary>
-        /// <param name="kdf">The key derivation service used for SRP authentication hash generation.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="kdf"/> is <see langword="null"/>.</exception>
-        public SrpClientService(IKeyDerivationService kdf)
-        {
-            _kdf = kdf ?? throw new ArgumentNullException(nameof(kdf));
-        }
-
         /// <inheritdoc />
         /// <remarks>
-        /// Derives authentication hash via <see cref="IKeyDerivationService.DeriveAuthHashForSrp"/>.
+        /// Derives authentication hash via <see cref="ISrpKeyDerivationService.DeriveAuthHashForSrp"/>.
         /// Sensitive buffers (auth hash and private key a) are cleared after use.
         /// </remarks>
-        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpGroup srpGroup, CryptoVersion cryptoVersion)    
+        public (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, byte[] authHashBytes, string saltBase64, string bBase64, SrpGroup srpGroup)    
         {
             var srpProfile = SrpProfileRegistry.GetProfile(srpGroup);
             var ctx = SrpContext.FromOptions(srpProfile.Options);
 
             byte[] salt = BigIntegerUtilities.DecodeBase64ToBytes(saltBase64);
-            byte[]? authHashBytes = null;
             byte[]? aBytes = null;
 
             try
             {
-                authHashBytes = _kdf.DeriveAuthHashForSrp(login, password, salt, ctx.HashAlgorithmName, cryptoVersion);
-
                 BigInteger x = new(authHashBytes, isBigEndian: true, isUnsigned: true);
 
                 int privateKeySize = Math.Max(32, ctx.ModulusSize / 2);

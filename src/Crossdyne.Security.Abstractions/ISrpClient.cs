@@ -20,20 +20,19 @@ namespace Crossdyne.Security.Abstractions
         /// Generates client proof (A, M1, session key K) from server challenge.
         /// </summary>
         /// <param name="login">User login.</param>
-        /// <param name="password">Plaintext password.</param>
+        /// <param name="authHashBytes">PasswordHash Bytes.</param>
         /// <param name="saltBase64">Server salt (standard Base64).</param>
         /// <param name="bBase64">Server public ephemeral B (standard Base64).</param>
         /// <param name="srpGroup">SRP group.</param>
-        /// <param name="cryptoVersion">Crypto version for KDF; <c>V1</c> uses default.</param>
         /// <returns>
         /// Tuple where <c>A</c> and <c>M1</c> are standard Base64 strings, 
         /// and <c>SessionKeyK</c> is the raw session key bytes.
         /// </returns>
-        /// <exception cref="ArgumentException"><paramref name="login"/> or <paramref name="password"/> is null or empty.</exception>
+        /// <exception cref="ArgumentException"><paramref name="login"/> or <paramref name="authHashBytes"/> is null or empty.</exception>
         /// <exception cref="Exceptions.InvalidKeyException">Salt is null or too short.</exception>
         /// <exception cref="Exceptions.SecurityException">Invalid server public key or shared secret is zero.</exception>
         /// <exception cref="Exceptions.SrpVerificationException">Error calculating parameter u.</exception>
-        (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, string password, string saltBase64, string bBase64, SrpGroup srpGroup, CryptoVersion cryptoVersion);
+        (string A, string M1, byte[] SessionKeyK) GenerateSrpProof(string login, byte[] authHashBytes, string saltBase64, string bBase64, SrpGroup srpGroup);
 
         /// <summary>
         /// Verifies the server proof M2.

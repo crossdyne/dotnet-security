@@ -1,5 +1,4 @@
 using Crossdyne.Security.Abstractions;
-using Crossdyne.Security.Cryptography;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -18,9 +17,7 @@ namespace Crossdyne.Security.Srp.Client
         public static IServiceCollection AddCrossdyneSrpClient(this IServiceCollection services)
         {
             services.TryAddSingleton<ISrpClient, SrpClientService>();
-            
-            services.AddCrossdyneCryptography();
-
+            services.TryAddSingleton<ISrpKeyDerivationService, SrpKeyDerivationService>();
             return services;
         }
     }

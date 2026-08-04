@@ -15,7 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Crossdyne.Security.Abstractions\Crossdyne.Security.Abstractions.csproj" />
-    <ProjectReference Include="..\Crossdyne.Security.Cryptography\Crossdyne.Security.Cryptography.csproj" />
+    <ProjectReference Include="..\Crossdyne.Security.Utilities\Crossdyne.Security.Utilities.csproj" />
   </ItemGroup>
 
   <PropertyGroup>
