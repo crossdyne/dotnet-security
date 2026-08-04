@@ -58,7 +58,7 @@ namespace Crossdyne.Security.Tests
         private (string A, string M1, byte[] sessionKeyK) GenerateValidClientProof(string login, string password, byte[] salt, BigInteger B)
         {
             var context = SrpHelper.GetSrpContext();
-            var client = new Srp.Client.SrpClientService();
+            var client = new Srp.Client.SrpClientService(_kdf);
             var saltBase64 = Convert.ToBase64String(salt).Replace('+', '-').Replace('/', '_');
             var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
             return client.GenerateSrpProof(login, password, saltBase64, B_base64, context, CryptoVersion);

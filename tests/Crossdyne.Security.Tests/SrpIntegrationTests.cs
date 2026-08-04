@@ -23,9 +23,9 @@ namespace Crossdyne.Security.Tests
 
         public SrpIntegrationTests()
         {
-            _client = new SrpClientService();
-            _server = new SrpServerService();
             _kdf = new KeyDerivationService();
+            _client = new SrpClientService(_kdf);
+            _server = new SrpServerService();
             _salt = RandomNumberGenerator.GetBytes(32);
         }
 
