@@ -7,6 +7,9 @@ using Crossdyne.Security.Utilities;
 
 namespace Crossdyne.Security.Srp.Client
 {
+    /// <summary>
+    /// Service for key divergence under the SRP protocol
+    /// </summary>
     public class SrpKeyDerivationService : ISrpKeyDerivationService
     {
         /// <inheritdoc />
