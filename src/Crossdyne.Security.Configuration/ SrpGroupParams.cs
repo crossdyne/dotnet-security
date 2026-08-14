@@ -10,7 +10,6 @@ namespace Crossdyne.Security.Configuration
     /// Supported groups (bits → security): 1024 (~80, deprecated), 1536 (~90, legacy), 
     /// 2048 (~112, baseline), 3072 (~128, preferred), 4096 (~156), 6144 (~192), 8192 (~256).
     /// Generators: g=2 for 1024/1536/2048; g=5 for 3072/4096/6144; g=19 for 8192.
-    /// Use <see cref="GetN"/> and <see cref="GetG"/>; <see cref="SrpGroup.Custom"/> throws 
     /// <see cref="NotImplementedException"/>.
     /// Thread-safe, stateless.
     /// </remarks>
@@ -18,7 +17,6 @@ namespace Crossdyne.Security.Configuration
     {
         /// <summary>Returns prime modulus <c>N</c> for the group.</summary>
         /// <exception cref="NotSupportedException">Group not recognized.</exception>
-        /// <exception cref="NotImplementedException">Group is <see cref="SrpGroup.Custom"/>.</exception>
         public static BigInteger GetN(SrpGroup group) => group switch
         {
             // RFC 5054, Appendix A.1 — 1024-bit prime modulus
@@ -197,14 +195,11 @@ namespace Crossdyne.Security.Configuration
                 "60C980DD" + "98EDD3DF" + "FFFFFFFF" + "FFFFFFFF", 
                 NumberStyles.HexNumber),
 
-                // Custom group: parameters must be supplied by the caller
-                SrpGroup.Custom => throw new NotImplementedException("For Custom groups, N and g parameters must be provided by the caller."),
-                    _ => throw new NotSupportedException($"SRP group '{group}' is not supported.")
+                _ => throw new NotSupportedException($"SRP group '{group}' is not supported.")
         };
 
         /// <summary>Returns generator <c>g</c> for the group.</summary>
         /// <exception cref="NotSupportedException">Group not recognized.</exception>
-        /// <exception cref="NotImplementedException">Group is <see cref="SrpGroup.Custom"/>.</exception>
         public static BigInteger GetG(SrpGroup group) => group switch
         {
             SrpGroup.Rfc5054_1024 => new BigInteger(2),
@@ -214,7 +209,6 @@ namespace Crossdyne.Security.Configuration
             SrpGroup.Rfc5054_4096 => new BigInteger(5),
             SrpGroup.Rfc5054_6144 => new BigInteger(5),
             SrpGroup.Rfc5054_8192 => new BigInteger(19),
-            SrpGroup.Custom => throw new NotImplementedException("For Custom groups, N and g parameters must be provided by the caller."),
             _ => throw new NotSupportedException($"SRP group '{group}' is not supported.")
         };
     }
