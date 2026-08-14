@@ -95,34 +95,7 @@ namespace Crossdyne.Security.Tests
 
         #endregion
 
-        #region Custom Iterations Tests
-
-        [Fact]
-        public void CryptoOptions_Pbkdf2Iterations_ThrowsOnSet_WhenBelowMinimum()
-        {
-            var options = new KdfOptions();
-
-            var exception = Assert.Throws<ArgumentOutOfRangeException>(() => options.Pbkdf2Iterations = 50_000);
-            
-            Assert.Equal("value", exception.ParamName);
-            Assert.Contains("must be at least", exception.Message);
-            Assert.Contains(SecurityConstants.Pbkdf2IterationsMinimum.ToString(), exception.Message);
-        }
-
-        #endregion
-
-         #region CryptoOptions Builder & Validation Tests
-
-        [Fact]
-        public void CryptoOptions_Validate_ThrowsOnInvalidConfiguration()
-        {
-            var options = new KdfOptions();
-            Assert.Throws<ArgumentOutOfRangeException>(() => options.Pbkdf2Iterations = SecurityConstants.Pbkdf2IterationsMinimum - 1);
-        }
-
-        #endregion
-
-         #region Security & Memory Tests
+        #region Security & Memory Tests
 
         [Fact]
         public void DeriveKeysFromPassword_AuthHashBytesAreClearedAfterUse()

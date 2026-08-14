@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Configuration</PackageId>
-    <Version>0.5.0-beta.1</Version>
+    <Version>1.0.0</Version>
     <Description>Cryptographic configuration constants and options for Crossdyne.Security libraries. 
     Provides RFC 5054-compliant SRP parameters (3072-bit prime), AES-GCM settings, 
     and PBKDF2 key derivation options with built-in validation, fluent builder API, 

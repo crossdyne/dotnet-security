@@ -3,7 +3,7 @@
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Windows</PackageId>
     <TargetFramework>net10.0-windows</TargetFramework>
-    <Version>0.5.0-beta.1</Version>
+    <Version>1.0.0</Version>
     <Description>Windows-specific security features for Crossdyne.Security. Provides integration with Windows Credential Manager, DPAPI (Data Protection API), Windows Hello, and other platform-specific security mechanisms.</Description>
     <PackageTags>security;windows;dpapi;credential-manager;windows-hello;platform-specific;windows-authentication;native</PackageTags>
     
@@ -17,6 +17,7 @@
   <ItemGroup>
     <PackageReference Include="System.Management" Version="10.0.2" />
     <PackageReference Include="System.Security.Cryptography.ProtectedData" Version="10.0.2" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
   </ItemGroup>
 
   <PropertyGroup>

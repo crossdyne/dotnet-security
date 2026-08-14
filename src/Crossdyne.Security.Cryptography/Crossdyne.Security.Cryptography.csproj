@@ -2,12 +2,16 @@
 
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Cryptography</PackageId>
-    <Version>0.5.0-beta.1</Version>
+    <Version>1.0.0</Version>
     <Description>Cryptographic primitives and utilities for Crossdyne.Security. Includes secure hashing, encryption, key derivation functions (KDF), and cryptographic helpers with best practices implementation.</Description>
     <PackageTags>security;cryptography;encryption;hashing;kdf;pbkdf2;argon2;bcrypt;key-derivation;crypto</PackageTags>
     
     <RootNamespace>Crossdyne.Security.Cryptography</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.9" />
+  </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Crossdyne.Security.Abstractions\Crossdyne.Security.Abstractions.csproj" />

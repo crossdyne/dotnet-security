@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Utilities</PackageId>
-    <Version>0.5.0-beta.1</Version>
+    <Version>1.0.0</Version>
     <Description>Cryptographic utility library for .NET providing BigInteger extensions, 
       URL-safe Base64 encoding, and SRP (Secure Remote Password) protocol helpers. 
       Includes fixed-length big-endian serialization, SHA-256 hashing utilities, 

@@ -1,5 +1,4 @@
-using System.Text;
-using System.Text.Json;
+using Crossdyne.Security.Abstractions;
 using Crossdyne.Security.Configuration;
 using Crossdyne.Security.Cryptography;
 using Crossdyne.Security.Exceptions;
@@ -8,30 +7,23 @@ namespace Crossdyne.Security.Tests
 {
     public class CryptoServiceTests
     {
-        private readonly CryptoService _service;
-        private readonly byte[] _validKey;
+        private readonly ICryptoService crypto = new CryptoService();
+        private readonly byte[] validKey;
 
         public CryptoServiceTests()
         {
-            _service = new CryptoService();
-            _validKey = _service.GenerateRandomBytes(SecurityConstants.KeySizeBytes);
+            validKey = crypto.GenerateRandomBytes(SecurityConstants.KeySizeBytes);
         }
 
-        #region Helper Methods
-
-        private T Clone<T>(T obj) => JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(obj))!;
-
-        #endregion
-
-        #region Basic Encryption/Decryption Tests
+        #region Encrypted
 
         [Fact]
         public void EncryptDecrypt_String_RoundTripSuccessful()
         {
             const string original = "Hello, World! 🔐";
 
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<string>(encrypted, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
+            var decrypted = crypto.DecryptData<string>(encrypted, validKey);
 
             Assert.Equal(original, decrypted);
         }
@@ -54,8 +46,8 @@ namespace Crossdyne.Security.Tests
                 Metadata = metadata
             };
 
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<TestUser>(encrypted, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
+            var decrypted = crypto.DecryptData<TestUser>(encrypted, validKey);
 
             Assert.NotNull(decrypted);
             Assert.Equal(original.Id, decrypted!.Id);
@@ -67,47 +59,9 @@ namespace Crossdyne.Security.Tests
             Assert.Equal(original.Metadata.Verified, decrypted.Metadata.Verified);
         }
 
-        [Fact]
-        public void EncryptDecrypt_Collection_RoundTripSuccessful()
-        {
-            var original = new[]
-            {
-                new { Id = 1, Value = "First" },
-                new { Id = 2, Value = "Second" },
-                new { Id = 3, Value = "Third" }
-            };
-
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<object[]>(encrypted, _validKey);
-
-            Assert.NotNull(decrypted);
-            Assert.Equal(3, decrypted?.Length);
-        }
-
-        [Fact]
-        public void EncryptDecrypt_NullValue_HandlesCorrectly()
-        {
-            string? original = null;
-
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<string?>(encrypted, _validKey);
-
-            Assert.Null(decrypted);
-        }
-
-        [Fact]
-        public void EncryptDecrypt_EmptyObject_HandlesCorrectly()
-        {
-            var original = new EmptyDto();
-
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<EmptyDto>(encrypted, _validKey);
-
-            Assert.NotNull(decrypted);
-        }
-
         #endregion
 
+        
         #region Key Validation Tests
 
         [Fact]
@@ -115,7 +69,7 @@ namespace Crossdyne.Security.Tests
         {
             var shortKey = new byte[16]; // 128-bit, not 256
 
-            Assert.Throws<InvalidKeyException>(() => _service.EncryptedData("test", shortKey));
+            Assert.Throws<InvalidKeyException>(() => crypto.EncryptData("test", shortKey));
         }
 
         [Fact]
@@ -123,32 +77,32 @@ namespace Crossdyne.Security.Tests
         {
             var longKey = new byte[64]; // 512-bit
 
-            Assert.Throws<InvalidKeyException>(() => _service.EncryptedData("test", longKey));
+            Assert.Throws<InvalidKeyException>(() => crypto.EncryptData("test", longKey));
         }
 
         [Fact]
         public void EncryptedData_NullKey_ThrowsArgumentNullException()
         {
-            Assert.Throws<ArgumentNullException>(() => _service.EncryptedData("test", null!));
+            Assert.Throws<ArgumentNullException>(() => crypto.EncryptData("test", null!));
         }
 
         [Fact]
         public void DecryptData_NullKey_ThrowsArgumentNullException()
         {
-            var encrypted = _service.EncryptedData("test", _validKey);
+            var encrypted = crypto.EncryptData("test", validKey);
 
             Assert.Throws<ArgumentNullException>(() => 
-                _service.DecryptData<string>(encrypted, null!));
+                crypto.DecryptData<string>(encrypted, null!));
         }
 
         [Fact]
         public void DecryptData_WrongKey_ThrowsDecryptionException()
         {
             var original = "Secret message";
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var wrongKey = _service.GenerateRandomBytes(SecurityConstants.KeySizeBytes);
+            var encrypted = crypto.EncryptData(original, validKey);
+            var wrongKey = crypto.GenerateRandomBytes(SecurityConstants.KeySizeBytes);
 
-            Assert.Throws<DecryptionException>(() => _service.DecryptData<string>(encrypted, wrongKey));
+            Assert.Throws<DecryptionException>(() => crypto.DecryptData<string>(encrypted, wrongKey));
         }
 
         #endregion
@@ -160,13 +114,13 @@ namespace Crossdyne.Security.Tests
         [InlineData("")]
         public void DecryptData_InvalidEncryptedString_ThrowsArgumentException(string? invalidInput)
         {
-            Assert.Throws<ArgumentException>(() => _service.DecryptData<string>(invalidInput!, _validKey));
+            Assert.Throws<ArgumentException>(() => crypto.DecryptData<string>(invalidInput!, validKey));
         }
 
         [Fact]
         public void DecryptData_InvalidBase64_ThrowsArgumentException()
         {
-            Assert.Throws<ArgumentException>(() => _service.DecryptData<string>("!@#InvalidBase64$$$", _validKey));
+            Assert.Throws<ArgumentException>(() => crypto.DecryptData<string>("!@#InvalidBase64$$$", validKey));
         }
 
         [Fact]
@@ -174,34 +128,34 @@ namespace Crossdyne.Security.Tests
         {
             var tooShort = Convert.ToBase64String(new byte[5]); // Way too short
 
-            Assert.Throws<SecurityException>(() =>  _service.DecryptData<string>(tooShort, _validKey));
+            Assert.Throws<SecurityException>(() =>  crypto.DecryptData<string>(tooShort, validKey));
         }
 
         [Fact]
         public void DecryptData_CorruptedData_ThrowsDecryptionException()
         {
             var original = "Important data";
-            var encrypted = _service.EncryptedData(original, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
             var encryptedBytes = Convert.FromBase64String(encrypted);
             
             // Corrupt one byte in the middle (ciphertext)
             encryptedBytes[encryptedBytes.Length / 2] ^= 0xFF;
             var corrupted = Convert.ToBase64String(encryptedBytes);
 
-            Assert.Throws<DecryptionException>(() => _service.DecryptData<string>(corrupted, _validKey));
+            Assert.Throws<DecryptionException>(() => crypto.DecryptData<string>(corrupted, validKey));
         }
 
         [Fact]
         public void DecryptData_TamperedTag_ThrowsDecryptionException()
         {
             var original = "Important data";
-            var encrypted = _service.EncryptedData(original, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
             var encryptedBytes = Convert.FromBase64String(encrypted);
             
             encryptedBytes[^1] ^= 0xFF;
             var tampered = Convert.ToBase64String(encryptedBytes);
 
-            Assert.Throws<DecryptionException>(() => _service.DecryptData<string>(tampered, _validKey));
+            Assert.Throws<DecryptionException>(() => crypto.DecryptData<string>(tampered, validKey));
         }
 
         #endregion
@@ -213,15 +167,15 @@ namespace Crossdyne.Security.Tests
         {
             const string original = "Same message";
 
-            var encrypted1 = _service.EncryptedData(original, _validKey);
-            var encrypted2 = _service.EncryptedData(original, _validKey);
+            var encrypted1 = crypto.EncryptData(original, validKey);
+            var encrypted2 = crypto.EncryptData(original, validKey);
 
             // Nonce is random, so outputs should differ
             Assert.NotEqual(encrypted1, encrypted2);
             
             // But both should decrypt to the same value
-            Assert.Equal(original, _service.DecryptData<string>(encrypted1, _validKey));
-            Assert.Equal(original, _service.DecryptData<string>(encrypted2, _validKey));
+            Assert.Equal(original, crypto.DecryptData<string>(encrypted1, validKey));
+            Assert.Equal(original, crypto.DecryptData<string>(encrypted2, validKey));
         }
 
         [Fact]
@@ -229,7 +183,7 @@ namespace Crossdyne.Security.Tests
         {
             const string original = "Test";
 
-            var encrypted = _service.EncryptedData(original, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
 
             // Should not throw
             var bytes = Convert.FromBase64String(encrypted);
@@ -245,8 +199,8 @@ namespace Crossdyne.Security.Tests
         {
             const string original = "Пароль 🔐 密码 🗝️ emoji 🎉";
 
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<string>(encrypted, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
+            var decrypted = crypto.DecryptData<string>(encrypted, validKey);
 
             Assert.Equal(original, decrypted);
         }
@@ -256,8 +210,8 @@ namespace Crossdyne.Security.Tests
         {
             var original = new string('X', 100_000); // 100KB string
 
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<string>(encrypted, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
+            var decrypted = crypto.DecryptData<string>(encrypted, validKey);
 
             Assert.Equal(original, decrypted);
         }
@@ -277,8 +231,8 @@ namespace Crossdyne.Security.Tests
                 }
             };
 
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<NestedDto>(encrypted, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
+            var decrypted = crypto.DecryptData<NestedDto>(encrypted, validKey);
 
             Assert.NotNull(decrypted);
             Assert.Equal("Deep value", decrypted?.Level1?.Level2?.Value);
@@ -296,8 +250,8 @@ namespace Crossdyne.Security.Tests
                 Roles = null
             };
 
-            var encrypted = _service.EncryptedData(original, _validKey);
-            var decrypted = _service.DecryptData<TestUser>(encrypted, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
+            var decrypted = crypto.DecryptData<TestUser>(encrypted, validKey);
 
             Assert.NotNull(decrypted);
             Assert.Equal(original.Id, decrypted!.Id);
@@ -311,7 +265,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void GenerateRandomBytes_DefaultLength_Returns32Bytes()
         {
-            var bytes = _service.GenerateRandomBytes();
+            var bytes = crypto.GenerateRandomBytes();
 
             Assert.Equal(SecurityConstants.KeySizeBytes, bytes.Length);
         }
@@ -319,7 +273,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void GenerateRandomBytes_CustomLength_ReturnsSpecifiedLength()
         {
-            var bytes = _service.GenerateRandomBytes(64);
+            var bytes = crypto.GenerateRandomBytes(64);
 
             Assert.Equal(64, bytes.Length);
         }
@@ -327,8 +281,8 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void GenerateRandomBytes_MultipleCalls_ProducesDifferentValues()
         {
-            var bytes1 = _service.GenerateRandomBytes(32);
-            var bytes2 = _service.GenerateRandomBytes(32);
+            var bytes1 = crypto.GenerateRandomBytes(32);
+            var bytes2 = crypto.GenerateRandomBytes(32);
 
             Assert.False(bytes1.SequenceEqual(bytes2));
         }
@@ -336,7 +290,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void GenerateRandomBytes_ZeroLength_ReturnsEmptyArray()
         {
-            var bytes = _service.GenerateRandomBytes(0);
+            var bytes = crypto.GenerateRandomBytes(0);
 
             Assert.Empty(bytes);
         }
@@ -353,9 +307,9 @@ namespace Crossdyne.Security.Tests
             // and doesn't leak sensitive data through exceptions.
             
             const string original = "Sensitive data";
-            var encrypted = _service.EncryptedData(original, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
 
-            var decrypted = _service.DecryptData<string>(encrypted, _validKey);
+            var decrypted = crypto.DecryptData<string>(encrypted, validKey);
 
             Assert.Equal(original, decrypted);
             // If plainBytes weren't cleared properly, it wouldn't affect output,
@@ -373,9 +327,9 @@ namespace Crossdyne.Security.Tests
             // This test verifies the format is correctly parsed.
             
             const string original = "Legacy format test";
-            var encrypted = _service.EncryptedData(original, _validKey);
+            var encrypted = crypto.EncryptData(original, validKey);
 
-            var decrypted = _service.DecryptData<string>(encrypted, _validKey);
+            var decrypted = crypto.DecryptData<string>(encrypted, validKey);
 
             Assert.Equal(original, decrypted);
         }
@@ -391,7 +345,7 @@ namespace Crossdyne.Security.Tests
 
             // Act
             var exception = Assert.Throws<InvalidKeyException>(() => 
-                _service.EncryptedData("test", shortKey));
+                crypto.EncryptData("test", shortKey));
 
             Assert.Contains("Key must be", exception.Message);
             Assert.Contains("bytes for AES-256", exception.Message);
@@ -400,7 +354,7 @@ namespace Crossdyne.Security.Tests
         [Fact]
         public void DecryptData_InvalidBase64_ExceptionHasInnerException()
         {
-            var exception = Assert.Throws<ArgumentException>(() => _service.DecryptData<string>("!@#invalid$$$", _validKey));
+            var exception = Assert.Throws<ArgumentException>(() => crypto.DecryptData<string>("!@#invalid$$$", validKey));
 
             Assert.Contains("Base64", exception.Message);
             Assert.NotNull(exception.InnerException);

@@ -14,6 +14,7 @@ namespace Crossdyne.Security.Utilities
         /// </summary>
         /// <param name="ctx">SRP context.</param>
         /// <param name="value">Value to serialize.</param>
+        /// <returns>Modulus-sized big-endian byte array.</returns>
         public static byte[] ToModulusBytes(SrpContext ctx, BigInteger value) =>
             BigIntegerUtilities.ToFixedLengthBytes(value, ctx.ModulusSize);
 
@@ -22,6 +23,7 @@ namespace Crossdyne.Security.Utilities
         /// </summary>
         /// <param name="ctx">SRP context.</param>
         /// <param name="value">Value to serialize.</param>
+        /// <returns>Hash-sized big-endian byte array.</returns>
         public static byte[] ToHashBytes(SrpContext ctx, BigInteger value) =>
             BigIntegerUtilities.ToFixedLengthBytes(value, ctx.HashSize);
 
@@ -30,6 +32,7 @@ namespace Crossdyne.Security.Utilities
         /// </summary>
         /// <param name="ctx">SRP context.</param>
         /// <param name="values">Values to hash.</param>
+        /// <returns>Hash result as an unsigned, big-endian <see cref="BigInteger"/>.</returns>
         public static BigInteger HashModuli(SrpContext ctx, params BigInteger[] values) =>
             BigIntegerUtilities.Hash(ctx.HashAlgorithmName, values.Select(v => ToModulusBytes(ctx, v)).ToArray());
 
@@ -60,23 +63,19 @@ namespace Crossdyne.Security.Utilities
             string identity, 
             byte[] salt)
         {
-            // H(N) и H(g)
             byte[] nBytes = ToModulusBytes(ctx, ctx.N);
             byte[] gBytes = ToModulusBytes(ctx, ctx.G);
             byte[] hashN = BigIntegerUtilities.ComputeHash(ctx.HashAlgorithmName, nBytes);
             byte[] hashG = BigIntegerUtilities.ComputeHash(ctx.HashAlgorithmName, gBytes);
 
-            // H(N) ⊕ H(g)
             byte[] xorNg = new byte[hashN.Length];
             for (int i = 0; i < hashN.Length; i++)
                 xorNg[i] = (byte)(hashN[i] ^ hashG[i]);
 
-            // H(I) — identity hashed as UTF-8
             byte[] hashI = BigIntegerUtilities.ComputeHash(
                 ctx.HashAlgorithmName, 
                 Encoding.UTF8.GetBytes(identity));
 
-            // Final hash: H( H(N)⊕H(g) | H(I) | s | PAD(A) | PAD(B) | K )
             return BigIntegerUtilities.ComputeHash(
                 ctx.HashAlgorithmName,
                 xorNg,
@@ -94,19 +93,21 @@ namespace Crossdyne.Security.Utilities
         /// <param name="A">Client ephemeral public key.</param>
         /// <param name="M1_Bytes">Client proof.</param>
         /// <param name="sessionKeyK">Session key bytes.</param>
+        /// <returns>The M2 proof as raw hash bytes.</returns>
         public static byte[] ComputeM2(SrpContext ctx, BigInteger A, byte[] M1_Bytes, byte[] sessionKeyK) =>
-        BigIntegerUtilities.ComputeHash(
-            ctx.HashAlgorithmName,
-            ToModulusBytes(ctx, A),
-            M1_Bytes,
-            sessionKeyK
-        );
+            BigIntegerUtilities.ComputeHash(
+                ctx.HashAlgorithmName,
+                ToModulusBytes(ctx, A),
+                M1_Bytes,
+                sessionKeyK
+            );
 
         /// <summary>
         /// Computes session key K = H(S).
         /// </summary>
         /// <param name="ctx">SRP context.</param>
         /// <param name="S">Shared secret.</param>
+        /// <returns>The session key K as raw hash bytes.</returns>
         public static byte[] ComputeSessionKey(SrpContext ctx, BigInteger S)
         {
             byte[] sBytes = S.ToByteArray(isUnsigned: true, isBigEndian: true);

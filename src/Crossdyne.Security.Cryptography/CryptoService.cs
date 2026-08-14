@@ -7,28 +7,21 @@ using Crossdyne.Security.Exceptions;
 
 namespace Crossdyne.Security.Cryptography
 {    
-    /// <summary>
-    /// Provides AES-GCM encryption and decryption with JSON serialization. Thread-safe.
-    /// </summary>
+    /// <inheritdoc />
     /// <remarks>
-    /// Encrypted data format (Base64): <c>[Nonce (N bytes)][Ciphertext][Tag (T bytes)]</c>.
+    /// Encrypted data format (Base64): <c>[Version (1 byte)][Nonce (N bytes)][Ciphertext][Tag (T bytes)]</c>.
     /// </remarks>
-    public class CryptoService : ICryptoServices
+    public class CryptoService : ICryptoService
     {
         #region Encrypted
 
-        /// <summary>
-        /// Encrypts an object to a Base64 string with configurable AES-GCM options.
-        /// Nonce is generated randomly.
-        /// </summary>
-        /// <typeparam name="T">Serializable type.</typeparam>
-        /// <param name="data">Object to encrypt.</param>
-        /// <param name="key">AES-256 key (32 bytes).</param>
-        /// <param name="version">Crypto configuration. <c>V1</c> uses default.</param>
-        /// <exception cref="ArgumentNullException">Key is null.</exception>
-        /// <exception cref="InvalidKeyException">Key is not 32 bytes.</exception>
-        /// <exception cref="SecurityException">Encryption failed.</exception>
-        public string EncryptedData<T>(T data, byte[] key, CryptoVersion version = CryptoVersion.V1)
+        /// <inheritdoc />
+        /// <remarks>
+        /// If <typeparamref name="T"/> is <c>byte[]</c>, raw bytes are Base64-encoded 
+        /// and wrapped as a JSON string before encryption.
+        /// Plaintext memory is cleared after encryption.
+        /// </remarks>
+        public string EncryptData<T>(T data, byte[] key, CryptoVersion version = CryptoVersion.V1)
         {
             ArgumentNullException.ThrowIfNull(key);
 
@@ -60,7 +53,7 @@ namespace Crossdyne.Security.Cryptography
             try
             {
                 using var aes = new AesGcm(key, opts.TagSize);
-                aes.Encrypt(nonce, plainBytes, cipherText, tag, opts.AssociatedData ?? ReadOnlySpan<byte>.Empty);
+                aes.Encrypt(nonce, plainBytes, cipherText, tag);
             }
             catch (CryptographicException ex)
             {
@@ -86,17 +79,11 @@ namespace Crossdyne.Security.Cryptography
 
         #region Decrypt
 
-        /// <summary>
-        /// Decrypts a Base64 string to an object with configurable AES-GCM options.
-        /// Performs AES-GCM decryption and JSON deserialization. Clears plaintext memory after use.
-        /// </summary>
-        /// <typeparam name="T">Target deserialization type.</typeparam>
-        /// <param name="encryptedBase64">Base64-encoded ciphertext.</param>
-        /// <param name="key">AES-256 key (32 bytes).</param>
-        /// <exception cref="ArgumentException">Input is null, empty, or invalid Base64.</exception>
-        /// <exception cref="ArgumentNullException">Key is null.</exception>
-        /// <exception cref="InvalidKeyException">Key is not 32 bytes.</exception>
-        /// <exception cref="DecryptionException">Decryption or authentication failed.</exception>
+        /// <inheritdoc />
+        /// <remarks>
+        /// Crypto version is read from the first byte of the payload.
+        /// Plaintext memory is cleared after decryption.
+        /// </remarks>
         public T? DecryptData<T>(string encryptedBase64, byte[] key)
         {
             if (string.IsNullOrEmpty(encryptedBase64)) 
@@ -127,7 +114,7 @@ namespace Crossdyne.Security.Cryptography
             opts.Validate();
 
             if (payload.Length < opts.NonceSize + opts.TagSize)
-                throw new DecryptionException($"Encrypted data is too short. Expected at least {SecurityConstants.AesGcmNonceSize + SecurityConstants.AesGcmTagSize} bytes, but got {encryptedBytes.Length}");
+                throw new DecryptionException($"Encrypted data is too short. Expected at least {SecurityConstants.AesGcmNonceSize + SecurityConstants.AesGcmTagSizeMax} bytes, but got {encryptedBytes.Length}");
 
             var nonce = payload.Slice(0, opts.NonceSize);
             var tag = payload.Slice(payload.Length - opts.TagSize, opts.TagSize);
@@ -138,7 +125,7 @@ namespace Crossdyne.Security.Cryptography
             try
             {
                 using var aes = new AesGcm(key, opts.TagSize);
-                aes.Decrypt(nonce, cipherText, tag, plainBytes, opts.AssociatedData ?? ReadOnlySpan<byte>.Empty);
+                aes.Decrypt(nonce, cipherText, tag, plainBytes);
 
                 if (typeof(T) == typeof(byte[]))
                 {
@@ -166,11 +153,7 @@ namespace Crossdyne.Security.Cryptography
 
         #endregion
 
-        /// <summary>
-        /// Generates cryptographically secure random bytes using the system CSPRNG.
-        /// </summary>
-        /// <param name="length">Number of bytes (default 32).</param>
-        /// <exception cref="ArgumentOutOfRangeException">Length is negative.</exception>
+        /// <inheritdoc />
         public byte[] GenerateRandomBytes(int length = 32)
         {
             var bytes = new byte[length];
