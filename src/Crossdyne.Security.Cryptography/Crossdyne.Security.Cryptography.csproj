@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <PackageId>Crossdyne.Security.Cryptography</PackageId>
-    <Version>0.5.0-beta.2</Version>
+    <Version>1.0.0</Version>
     <Description>Cryptographic primitives and utilities for Crossdyne.Security. Includes secure hashing, encryption, key derivation functions (KDF), and cryptographic helpers with best practices implementation.</Description>
     <PackageTags>security;cryptography;encryption;hashing;kdf;pbkdf2;argon2;bcrypt;key-derivation;crypto</PackageTags>
     
