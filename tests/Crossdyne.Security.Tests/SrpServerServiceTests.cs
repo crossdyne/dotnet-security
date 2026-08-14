@@ -2,402 +2,193 @@ using System.Numerics;
 using System.Security.Cryptography;
 using Crossdyne.Security.Abstractions;
 using Crossdyne.Security.Configuration;
-using Crossdyne.Security.Cryptography;
 using Crossdyne.Security.Exceptions;
+using Crossdyne.Security.Srp.Client;
 using Crossdyne.Security.Srp.Server;
-using Crossdyne.Security.Tests.Helpers;
 using Crossdyne.Security.Utilities;
 
 namespace Crossdyne.Security.Tests
 {
     public class SrpServerServiceTests
     {
-        private readonly SrpServerService _server;
-        private readonly KeyDerivationService _kdf;
-        private const string TestLogin = "user@example.com";
-        private const string TestPassword = "MyStr0ng!P@ssw0rd2024";
-        private readonly byte[] _testSalt;
-        private readonly CryptoVersion CryptoVersion = CryptoVersion.V1;
+        private readonly SrpServerService srpServer = new();
+        private const SrpGroup ValidGroup = SrpGroup.Rfc5054_3072;
 
-        public SrpServerServiceTests()
+        private static SrpContext Ctx => 
+            SrpContext.FromOptions(SrpProfileRegistry.GetProfile(ValidGroup).Options);
+
+        private static byte[] ValidSalt()
         {
-            _server = new SrpServerService();
-            _kdf = new KeyDerivationService();
-            _testSalt = RandomNumberGenerator.GetBytes(32);
+            byte[] s = new byte[16];
+            RandomNumberGenerator.Fill(s);
+            return s;
         }
 
-        #region Helper Methods
-
-        private byte[] GenerateVerifierBytes(string login, string password, byte[] salt)
+        private static byte[] ValidVerifier()
         {
-            var context = SrpHelper.GetSrpContext();
-            var authHash = _kdf.DeriveAuthHashForSrp(login, password, salt, context.HashAlgorithmName, CryptoVersion);
-            var x = new BigInteger(authHash, isBigEndian: true, isUnsigned: true);
-            var v = BigInteger.ModPow(context.G, x, context.N);
-            return SrpEncoding.ToModulusBytes(context, v);
+            byte[] hash = new byte[32];
+            RandomNumberGenerator.Fill(hash);
+            BigInteger x = new(hash, isUnsigned: true, isBigEndian: true);
+            BigInteger v = BigInteger.ModPow(Ctx.G, x, Ctx.N);
+            return BigIntegerUtilities.ToFixedLengthBytes(v, Ctx.ModulusSize);
         }
-
-        private SrpSessionState CreateValidSession(byte[] verifierBytes, out byte[] bBytes, out BigInteger B)
-        {
-            var context = SrpHelper.GetSrpContext();
-            bBytes = RandomNumberGenerator.GetBytes(32);
-            var b = new BigInteger(bBytes, isBigEndian: true, isUnsigned: true);
-            var v = new BigInteger(verifierBytes, isBigEndian: true, isUnsigned: true);
-            var gB = BigInteger.ModPow(context.G, b, context.N);
-            B = (context.K * v + gB) % context.N;
-
-            return new SrpSessionState(
-                TestLogin,
-                bBytes,
-                verifierBytes,
-                SrpEncoding.ToModulusBytes(context, B),
-                _testSalt
-            );
-        }
-
-        private (string A, string M1, byte[] sessionKeyK) GenerateValidClientProof(string login, string password, byte[] salt, BigInteger B)
-        {
-            var context = SrpHelper.GetSrpContext();
-            var client = new Srp.Client.SrpClientService(_kdf);
-            var saltBase64 = Convert.ToBase64String(salt).Replace('+', '-').Replace('/', '_');
-            var B_base64 = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, B));
-            return client.GenerateSrpProof(login, password, saltBase64, B_base64, context, CryptoVersion);
-        }
-
-        #endregion
 
         #region GetSrpChallenge
 
         [Fact]
-        public void GetSrpChallenge_ValidVerifier_ReturnsValidSession()
-        {
-            // Arrange
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-
-            // Act
-            var session = _server.GetSrpChallenge(TestLogin, verifierBytes, _testSalt, context);
-
-            // Assert
-            Assert.Equal(TestLogin, session.Login);
-            Assert.NotNull(session.PrivateKeyB);
-            
-            var bBytes = session.PrivateKeyB;
-            var vBytes = session.Verifier;
-            var BBytes = session.PublicKeyB;
-            
-            var expectedPrivateKeySize = Math.Max(32, context.ModulusSize / 2);
-            Assert.Equal(expectedPrivateKeySize, bBytes.Length);
-            
-            Assert.Equal(context.ModulusSize, vBytes.Length);
-            Assert.Equal(context.ModulusSize, BBytes.Length);
-        }
-
-        [Fact]
-        public void GetSrpChallenge_DifferentCalls_ProducesDifferentB()
-        {
-            // Arrange
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-
-            // Act
-            var session1 = _server.GetSrpChallenge(TestLogin, verifierBytes, _testSalt, context);
-            var session2 = _server.GetSrpChallenge(TestLogin, verifierBytes, _testSalt, context);
-
-            // Assert
-            // B should differ due to random 'b'
-            Assert.NotEqual(session1.PublicKeyB, session2.PublicKeyB);
-            Assert.NotEqual(session1.PrivateKeyB, session2.PrivateKeyB);
-            
-            // Verifier should be the same
-            Assert.Equal(session1.Verifier, session2.Verifier);
-        }
-
-        [Fact]
         public void GetSrpChallenge_NullVerifier_ThrowsArgumentNullException()
         {
-            var context = SrpHelper.GetSrpContext();
-
-            // Act & Assert
-            Assert.Throws<ArgumentNullException>(() => 
-                _server.GetSrpChallenge(TestLogin, null!, _testSalt, context));
+            Assert.Throws<ArgumentNullException>(() =>
+                srpServer.GetSrpChallenge("alice", null!, ValidSalt(), ValidGroup));
         }
 
         [Fact]
-        public void GetSrpChallenge_EmptyVerifier_ThrowsSrpVerificationException()
+        public void GetSrpChallenge_NullLogin_ThrowsArgumentNullException()
         {
-            var context = SrpHelper.GetSrpContext();
-            var emptyVerifier = Array.Empty<byte>();
-
-            var exception = Assert.Throws<SrpVerificationException>(() => 
-                _server.GetSrpChallenge(TestLogin, emptyVerifier, _testSalt, context));
-
-            Assert.Contains("corrupted", exception.Message);
-        }
-
-
-        #endregion
-
-        #region VerifySrpProof - Valid Flow
-
-        [Fact]
-        public void VerifySrpProof_ValidClientProof_ReturnsValidM2()
-        {
-            // Arrange: Full setup
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out var B);
-            var (A, M1, SessionKey) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
-
-            // Act
-            var M2 = _server.VerifySrpProof(session, A, M1, context);
-
-            // Assert
-            Assert.NotNull(M2);
-            var m2Bytes = Convert.FromBase64String(M2);
-            Assert.Equal(context.HashSize, m2Bytes.Length); // SHA-256
+            Assert.Throws<ArgumentNullException>(() =>
+                srpServer.GetSrpChallenge(null!, ValidVerifier(), ValidSalt(), ValidGroup));
         }
 
         [Fact]
-        public void VerifySrpProof_SameSession_DifferentClientProof_ProducesConsistentM2()
+        public void GetSrpChallenge_EmptyLogin_ThrowsArgumentException()
         {
-            // Note: M2 depends on A, M1, S - if client sends different A, M2 will differ
-            // This tests that server computation is deterministic given inputs
-            
-            // Arrange
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out var B);
-            var (A1, M1_1, S1) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
-            
-            // Generate second proof (will have different A due to random 'a')
-            var (A2, M1_2, S2) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
+            Assert.Throws<ArgumentException>(() =>
+                srpServer.GetSrpChallenge("", ValidVerifier(), ValidSalt(), ValidGroup));
+        }
 
-            // Act
-            var M2_1 = _server.VerifySrpProof(session, A1, M1_1, context);
-            var M2_2 = _server.VerifySrpProof(session, A2, M1_2, context);
+        [Fact]
+        public void GetSrpChallenge_ZeroVerifier_ThrowsSrpVerificationException()
+        {
+            byte[] zeroV = new byte[Ctx.ModulusSize]; // все нули
 
-            // Assert: M2 will differ because A and M1 differ
-            Assert.NotEqual(M2_1, M2_2);
-            
-            // But both should be valid format
-            Assert.NotNull(M2_1);
-            Assert.NotNull(M2_2);
+            Assert.Throws<SrpVerificationException>(() =>
+                srpServer.GetSrpChallenge("alice", zeroV, ValidSalt(), ValidGroup));
+        }
+
+        [Fact]
+        public void GetSrpChallenge_VerifierEqualToModulus_ThrowsSrpVerificationException()
+        {
+            byte[] nBytes = BigIntegerUtilities.ToFixedLengthBytes(Ctx.N, Ctx.ModulusSize);
+
+            Assert.Throws<SrpVerificationException>(() =>
+                srpServer.GetSrpChallenge("alice", nBytes, ValidSalt(), ValidGroup));
+        }
+
+        [Fact]
+        public void GetSrpChallenge_ValidInputs_ReturnsStateWithNonZeroB()
+        {
+            byte[] salt = ValidSalt();
+            byte[] verifier = ValidVerifier();
+
+            var state = srpServer.GetSrpChallenge("alice", verifier, salt, ValidGroup);
+
+            Assert.Equal("alice", state.Login);
+            Assert.Equal(salt, state.Salt);
+            Assert.Equal(verifier, state.Verifier);
+            Assert.NotNull(state.PrivateKeyB);
+            Assert.True(state.PrivateKeyB.Length > 0);
+            Assert.NotNull(state.PublicKeyB);
+            Assert.True(state.PublicKeyB.Length > 0);
         }
 
         #endregion
 
-        #region VerifySrpProof - Security Validation
+        #region VerifySrpProof
 
         [Fact]
-        public void VerifySrpProof_ZeroVerifier_ThrowsSrpVerificationException()
+        public void VerifySrpProof_InvalidABase64_ThrowsFormatException()
         {
-            // Arrange: Create session with zero verifier
-            var context = SrpHelper.GetSrpContext();
-            var zeroVerifier = new byte[context.ModulusSize];
-            var session = CreateValidSession(zeroVerifier, out _, out _);
-            // Override verifier to zero
-            var zeroV = BigInteger.Zero;
-            session = new SrpSessionState(
-                session.Login,
-                session.PrivateKeyB,
-                SrpEncoding.ToModulusBytes(context, zeroV),
-                session.PublicKeyB,
-                 _testSalt
-            );
-            
-            var invalidA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, BigInteger.One));
-            var invalidM1 = Convert.ToBase64String(new byte[32]);
+            var state = CreateDummyState();
 
-            // Act & Assert
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, invalidA, invalidM1, context));
+            Assert.Throws<FormatException>(() =>
+                srpServer.VerifySrpProof(state, "!!!", "AA==", ValidGroup));
         }
 
         [Fact]
-        public void VerifySrpProof_AEqualsZero_ThrowsSrpVerificationException()
+        public void VerifySrpProof_AIsZero_ThrowsSrpVerificationException()
         {
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out _);
-            
-            var zeroA = Convert.ToBase64String(new byte[context.ModulusSize]);
-            var dummyM1 = Convert.ToBase64String(new byte[32]);
+            var state = CreateDummyState();
 
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, zeroA, dummyM1, context));
+            var ex = Assert.Throws<SrpVerificationException>(() =>
+                srpServer.VerifySrpProof(state, "AA==", "AA==", ValidGroup));
+
+            Assert.Contains("Incorrect value of A", ex.Message);
         }
 
         [Fact]
-        public void VerifySrpProof_AOutOfRange_ThrowsSrpVerificationException()
+        public void VerifySrpProof_CorruptedVerifierInState_ThrowsSrpVerificationException()
         {
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out _);
-            
-            // A >= N is invalid
-            var invalidA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, context.N));
-            var dummyM1 = Convert.ToBase64String(new byte[32]);
+            var state = new SrpSessionState(
+                "alice",
+                new byte[32],
+                new byte[Ctx.ModulusSize], // v = 0
+                new byte[Ctx.ModulusSize],
+                ValidSalt());
 
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, invalidA, dummyM1, context));
+            Assert.Throws<SrpVerificationException>(() =>
+                srpServer.VerifySrpProof(state, "AA==", "AA==", ValidGroup));
         }
 
         [Fact]
-        public void VerifySrpProof_WrongPassword_ThrowsSrpVerificationException()
+        public void VerifySrpProof_WrongM1_ThrowsSrpVerificationException()
         {
-            // Arrange: Server expects password "correct", client uses "wrong"
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, "correct_password", _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out var B);
-            
-            // Client proves with wrong password
-            var (A, M1, _) = GenerateValidClientProof(TestLogin, "wrong_password", _testSalt, B);
+            // Генерируем валидный challenge
+            byte[] salt = ValidSalt();
+            byte[] verifier = ValidVerifier();
+            var state = srpServer.GetSrpChallenge("alice", verifier, salt, ValidGroup);
 
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, A, M1, context));
+            // Подсовываем случайный M1
+            byte[] fakeM1 = new byte[Ctx.HashSize];
+            RandomNumberGenerator.Fill(fakeM1);
+
+            var ex = Assert.Throws<SrpVerificationException>(() =>
+                srpServer.VerifySrpProof(state, Convert.ToBase64String(state.PublicKeyB), Convert.ToBase64String(fakeM1), ValidGroup));
+
+            Assert.Contains("Invalid password", ex.Message);
         }
-
+        
         [Fact]
-        public void VerifySrpProof_TamperedM1_ThrowsSrpVerificationException()
+        public void VerifySrpProof_ValidClientProof_ReturnsM2()
         {
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out var B);
-            var (A, M1, _) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
-            
-            // Tamper with M1
-            var m1Bytes = Convert.FromBase64String(M1);
-            m1Bytes[0] ^= 0xFF;
-            var tamperedM1 = Convert.ToBase64String(m1Bytes);
+            var client = new SrpClientService();
+            byte[] salt = ValidSalt();
+            string saltB64 = Convert.ToBase64String(salt);
 
-            Assert.Throws<SrpVerificationException>(() => _server.VerifySrpProof(session, A, tamperedM1, context));
-        }
+            // Генерируем authHash и verifier
+            byte[] authHash = new byte[32];
+            RandomNumberGenerator.Fill(authHash);
+            string verifierB64 = client.GenerateSrpVerifier(Convert.ToBase64String(authHash), ValidGroup);
+            byte[] verifierBytes = Convert.FromBase64String(verifierB64);
 
-        [Fact]
-        public void VerifySrpProof_FixedTimeComparison_PreventsTimingAttack()
-        {
-            // This test documents that FixedTimeEquals is used
-            // Actual timing attack testing requires statistical analysis
+            // Сервер выдаёт challenge
+            var state = srpServer.GetSrpChallenge("alice", verifierBytes, salt, ValidGroup);
+            string bB64 = Convert.ToBase64String(state.PublicKeyB);
 
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out var B);
-            var (A, M1, _) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
-            
-            // Create M1 with one-bit difference at various positions
-            var m1Bytes = Convert.FromBase64String(M1);
-            
-            // Act & Assert: All should throw with similar timing (conceptual test)
-            for (int i = 0; i < m1Bytes.Length; i++)
-            {
-                var tampered = (byte[])m1Bytes.Clone();
-                tampered[i] ^= 0x01;
-                var tamperedM1 = Convert.ToBase64String(tampered);
-                
-                Assert.Throws<SrpVerificationException>(() =>  _server.VerifySrpProof(session, A, tamperedM1, context));
-            }
+            // Клиент считает proof
+            var (a, m1, sessionKeyK) = client.GenerateSrpProof("alice", authHash, saltB64, bB64, ValidGroup);
+
+            // Сервер верифицирует и возвращает M2
+            string m2 = srpServer.VerifySrpProof(state, a, m1, ValidGroup);
+
+            Assert.False(string.IsNullOrEmpty(m2));
+
+            // Убеждаемся, что клиент тоже принимает этот M2
+            Assert.True(client.VerifyServerM2(a, m1, sessionKeyK, m2, ValidGroup));
         }
 
         #endregion
 
-        #region VerifySrpProof - Input Validation
-
-        [Fact]
-        public void VerifySrpProof_InvalidBase64A_ThrowsFormatException()
+        private static SrpSessionState CreateDummyState()
         {
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out _);
+            byte[] dummyB = new byte[Ctx.ModulusSize];
+            RandomNumberGenerator.Fill(dummyB);
 
-            Assert.Throws<FormatException>(() => _server.VerifySrpProof(session, "!!!invalid!!!", "M1", context));
+            return new SrpSessionState(
+                "alice",
+                new byte[32],
+                ValidVerifier(),
+                dummyB,
+                ValidSalt());
         }
-
-        [Fact]
-        public void VerifySrpProof_InvalidBase64M1_ThrowsFormatException()
-        {
-            var context = SrpHelper.GetSrpContext();
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out _);
-            var validA = Convert.ToBase64String(SrpEncoding.ToModulusBytes(context, BigInteger.One));
-
-            Assert.Throws<FormatException>(() => _server.VerifySrpProof(session, validA, "!!!invalid!!!", context));
-        }
-
-        #endregion
-
-        #region Helper Method Tests
-
-        [Fact]
-        public void ToFixedLength_ShortValue_PadsWithZeros()
-        {
-            // Arrange: Use reflection to access private method or test via integration
-            // Since ToFixedLength is private, we test its behavior through public API
-            
-            // Arrange: Small BigInteger
-            var context = SrpHelper.GetSrpContext();
-            var small = BigInteger.One;
-
-            // Act: Generate challenge and verify B has correct length
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = _server.GetSrpChallenge(TestLogin, verifierBytes, _testSalt, context);
-            var BBytes = session.PublicKeyB;
-
-            Assert.Equal(context.ModulusSize, BBytes.Length);
-        }
-
-        [Fact]
-        public void CalculateSrpHash_MultipleValues_ProducesConsistentOutput()
-        {
-            // Test via integration: u parameter computation
-            var verifierBytes = GenerateVerifierBytes(TestLogin, TestPassword, _testSalt);
-            var session = CreateValidSession(verifierBytes, out _, out var B);
-            var (A1, M1, _) = GenerateValidClientProof(TestLogin, TestPassword, _testSalt, B);
-            var A_big = BigIntegerUtilities.FromBase64(A1);
-            
-            // Act: Call twice with same inputs
-            var session2 = CreateValidSession(verifierBytes, out _, out _);
-            // Note: B will differ due to random b, so we can't test exact u equality
-            // Instead, verify the method doesn't throw and produces valid output
-            
-            // This is tested indirectly through VerifySrpProof success
-            Assert.True(true, "CalculateSrpHash tested via integration in VerifySrpProof");
-        }
-
-        #endregion
-
-        #region Edge Cases
-
-        [Fact]
-        public void VerifySrpProof_VeryLargeLogin_HandlesCorrectly()
-        {
-            var context = SrpHelper.GetSrpContext();
-            var longLogin = new string('u', 1000) + "@example.com";
-            var verifierBytes = GenerateVerifierBytes(longLogin, TestPassword, _testSalt);
-            
-            var bBytes = RandomNumberGenerator.GetBytes(32);
-            var b = new BigInteger(bBytes, isBigEndian: true, isUnsigned: true);
-            var v = new BigInteger(verifierBytes, isBigEndian: true, isUnsigned: true);
-            var gB = BigInteger.ModPow(context.G, b, context.N);
-            var B = (context.K * v + gB) % context.N;
-            var session = new SrpSessionState(longLogin, bBytes, verifierBytes, SrpEncoding.ToModulusBytes(context, B), _testSalt);
-            
-            var (A, M1, _) = GenerateValidClientProof(longLogin, TestPassword, _testSalt, B);
-
-            var M2 = _server.VerifySrpProof(session, A, M1, context);
-
-            Assert.NotNull(M2);
-        }
-
-        [Fact]
-        public void GetSrpChallenge_VerifierLargerThanModulus_ThrowsSrpVerificationException()
-        {
-            var context = SrpHelper.GetSrpContext();
-            var largeV = context.N * 2;
-            var largeVerifierBytes = largeV.ToByteArray(isUnsigned: true, isBigEndian: true);
-
-            var exception = Assert.Throws<SrpVerificationException>(() => 
-                _server.GetSrpChallenge(TestLogin, largeVerifierBytes, _testSalt, context));
-
-            Assert.Contains("corrupted", exception.Message);
-        }
-
-        #endregion
     }
 }

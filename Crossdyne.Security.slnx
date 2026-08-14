@@ -10,8 +10,8 @@
     <Project Path="src/Crossdyne.Security.Windows/Crossdyne.Security.Windows.csproj" Id="0c826c62-d107-4e6c-9aee-bffb7b7c6625" />
     <Project Path="src/Crossdyne.Security/Crossdyne.Security.csproj" />
   </Folder>
-  <!-- <Folder Name="/tests/">
+  <Folder Name="/tests/">
     <Project Path="tests/Crossdyne.Security.Benchmarks/Crossdyne.Security.Benchmarks.csproj" Id="6b8eabae-d82d-4b7c-99a8-2ab68b8324e4" />
     <Project Path="tests/Crossdyne.Security.Tests/Crossdyne.Security.Tests.csproj" Id="1465511b-0b2d-49c9-a095-c06cd7ddf434" />
-  </Folder> -->
+  </Folder>
 </Solution>
