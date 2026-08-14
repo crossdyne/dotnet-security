@@ -53,7 +53,7 @@ namespace Crossdyne.Security.Cryptography
             try
             {
                 using var aes = new AesGcm(key, opts.TagSize);
-                aes.Encrypt(nonce, plainBytes, cipherText, tag, opts.AssociatedData ?? ReadOnlySpan<byte>.Empty);
+                aes.Encrypt(nonce, plainBytes, cipherText, tag);
             }
             catch (CryptographicException ex)
             {
@@ -114,7 +114,7 @@ namespace Crossdyne.Security.Cryptography
             opts.Validate();
 
             if (payload.Length < opts.NonceSize + opts.TagSize)
-                throw new DecryptionException($"Encrypted data is too short. Expected at least {SecurityConstants.AesGcmNonceSize + SecurityConstants.AesGcmTagSize} bytes, but got {encryptedBytes.Length}");
+                throw new DecryptionException($"Encrypted data is too short. Expected at least {SecurityConstants.AesGcmNonceSize + SecurityConstants.AesGcmTagSizeMax} bytes, but got {encryptedBytes.Length}");
 
             var nonce = payload.Slice(0, opts.NonceSize);
             var tag = payload.Slice(payload.Length - opts.TagSize, opts.TagSize);
@@ -125,7 +125,7 @@ namespace Crossdyne.Security.Cryptography
             try
             {
                 using var aes = new AesGcm(key, opts.TagSize);
-                aes.Decrypt(nonce, cipherText, tag, plainBytes, opts.AssociatedData ?? ReadOnlySpan<byte>.Empty);
+                aes.Decrypt(nonce, cipherText, tag, plainBytes);
 
                 if (typeof(T) == typeof(byte[]))
                 {

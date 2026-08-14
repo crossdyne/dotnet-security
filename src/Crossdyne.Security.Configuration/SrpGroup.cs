@@ -30,8 +30,5 @@ namespace Crossdyne.Security.Configuration
 
         /// <summary>8192-bit, g=19, ~256-bit security. Experimental, extremely slow.</summary>
         Rfc5054_8192 = 7,
-
-        /// <summary>User-supplied N and g. Validate safe prime and generator.</summary>
-        Custom = 99
     }
 }

@@ -4,101 +4,83 @@ using Crossdyne.Security.Exceptions;
 namespace Crossdyne.Security.Configuration
 {
     /// <summary>
-    /// Configuration options for PBKDF2 key derivation.
-    /// Mutable, not thread-safe. Use <see cref="KdfOptionsBuilder"/> for fluent setup.
+    /// Immutable PBKDF2/HKDF configuration. All parameters are validated at the moment of initialization.
     /// </summary>
-    public class KdfOptions
+    /// <remarks>
+    /// Do not construct manually unless you explicitly call <see cref="Validate"/> before use.
+    /// Prefer using versioned presets such as <see cref="V1"/>.
+    /// </remarks>
+    public sealed record KdfOptions
     {
-        private int _pbkdf2Iterations = SecurityConstants.Pbkdf2IterationsDefault;
+        private int _pbkdf2Iterations;
 
         /// <summary>
-        /// PBKDF2 iteration count. Default <see cref="SecurityConstants.Pbkdf2IterationsDefault"/>.
-        /// Higher values increase security but slow down derivation.
+        /// PBKDF2 iteration count. Must be at least <see cref="SecurityConstants.Pbkdf2IterationsMinimum"/>.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">Below <see cref="SecurityConstants.Pbkdf2IterationsMinimum"/>.</exception>
-        public int Pbkdf2Iterations
+        /// <exception cref="ArgumentOutOfRangeException">Below the absolute minimum.</exception>
+        public required int Pbkdf2Iterations
         {
             get => _pbkdf2Iterations;
-            set
+            init
             {
                 if (value < SecurityConstants.Pbkdf2IterationsMinimum)
-                    throw new ArgumentOutOfRangeException(nameof(value), $"PBKDF2 iterations must be at least {SecurityConstants.Pbkdf2IterationsMinimum} for security.");
+                    throw new ArgumentOutOfRangeException(nameof(value),
+                        $"PBKDF2 iterations must be at least {SecurityConstants.Pbkdf2IterationsMinimum}.");
 
                 _pbkdf2Iterations = value;
             }
         }
-
+        
         private HashAlgorithmName _hashAlgorithm = HashAlgorithmName.SHA256;
 
         /// <summary>
-        /// Hash algorithm used by PBKDF2. Supported: SHA256 (default), SHA384, SHA512.
-        /// Changing the algorithm produces different derived keys.
+        /// Hash algorithm used by PBKDF2 and HKDF. Supported: SHA256, SHA384, SHA512.
         /// </summary>
-        /// <exception cref="ArgumentOutOfRangeException">Unsupported algorithm.</exception>
-        public HashAlgorithmName HashAlgorithm
+        /// <exception cref="ArgumentOutOfRangeException">Unsupported algorithm name.</exception>
+        public required HashAlgorithmName HashAlgorithm
         {
             get => _hashAlgorithm;
-            set
+            init
             {
                 if (value != HashAlgorithmName.SHA256 &&
                     value != HashAlgorithmName.SHA384 &&
                     value != HashAlgorithmName.SHA512)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), $"Unsupported hash algorithm: {value.Name}");
+                    throw new ArgumentOutOfRangeException(nameof(value),
+                        $"Unsupported hash algorithm: {value.Name}. Supported: SHA256, SHA384, SHA512.");
                 }
-                
+
                 _hashAlgorithm = value;
             }
         }
 
         /// <summary>
-        /// Validates that <see cref="Pbkdf2Iterations"/> meets the minimum threshold.
+        /// Final validation guard. Idempotent if object was constructed via init.
         /// </summary>
-        /// <exception cref="SecurityException">Iterations too low.</exception>
+        /// <exception cref="SecurityException">Any parameter violates security floor.</exception>
         public void Validate()
         {
             if (Pbkdf2Iterations < SecurityConstants.Pbkdf2IterationsMinimum)
-                throw new SecurityException($"Pbkdf2Iterations ({Pbkdf2Iterations}) is below minimum safe value.");
+                throw new SecurityException($"PBKDF2 iterations ({Pbkdf2Iterations}) are below the safe minimum.");
+
+            if (HashAlgorithm != HashAlgorithmName.SHA256 &&
+                HashAlgorithm != HashAlgorithmName.SHA384 &&
+                HashAlgorithm != HashAlgorithmName.SHA512)
+            {
+                throw new SecurityException($"Hash algorithm {HashAlgorithm.Name} is not supported.");
+            }
         }
 
-        // === Presets ===
+        // === Versioned Presets ===
 
-        /// <summary>Default preset: SHA-256, <see cref="SecurityConstants.Pbkdf2IterationsDefault"/> iterations.</summary>
-        public static KdfOptions Default => new();
-
-        // === Builder ===
-
-        /// <summary>Creates a builder for fluent configuration.</summary>
-        public static KdfOptionsBuilder Create() => new();
-
-        /// <summary>Fluent builder for <see cref="KdfOptions"/>.</summary>
-        public sealed class KdfOptionsBuilder
+        /// <summary>
+        /// V1 preset: SHA-256, 600 000 iterations.
+        /// These exact values are frozen for all V1-derived keys.
+        /// </summary>
+        public static readonly KdfOptions V1 = new()
         {
-            private readonly KdfOptions _options = new();
-
-            /// <summary>Sets PBKDF2 iterations. Minimum 100_000.</summary>
-            /// <exception cref="ArgumentOutOfRangeException">Below minimum.</exception>
-            public KdfOptionsBuilder WithPbkdf2Iterations(int iterations)
-            {
-                _options.Pbkdf2Iterations = iterations;
-                return this;
-            }
-
-            /// <summary>Sets the hash algorithm (SHA256, SHA384, SHA512). Default SHA256.</summary>
-            /// <exception cref="ArgumentOutOfRangeException">Unsupported algorithm.</exception>
-            public KdfOptionsBuilder WithHashAlgorithm(HashAlgorithmName algorithm)
-            {
-                _options.HashAlgorithm = algorithm;
-                return this;
-            }
-
-            /// <summary>Builds and validates the options.</summary>
-            /// <exception cref="SecurityException">Validation failed.</exception>
-            public KdfOptions Build()
-            {
-                _options.Validate();
-                return _options;
-            }
-        }
+            Pbkdf2Iterations = 600_000,
+            HashAlgorithm = HashAlgorithmName.SHA256
+        };
     }
 }

@@ -15,11 +15,11 @@ namespace Crossdyne.Security.Configuration
         {
             var hashAlgo = group switch
             {
-                SrpGroup.Rfc5054_1024 => HashAlgorithmName.SHA256,
-                SrpGroup.Rfc5054_2048 => HashAlgorithmName.SHA256,
+                SrpGroup.Rfc5054_1024 or 
+                SrpGroup.Rfc5054_2048 or 
                 SrpGroup.Rfc5054_3072 => HashAlgorithmName.SHA256,
-                SrpGroup.Rfc5054_4096 or 
-                SrpGroup.Rfc5054_6144 or 
+                SrpGroup.Rfc5054_4096 or
+                SrpGroup.Rfc5054_6144 or
                 SrpGroup.Rfc5054_8192 => HashAlgorithmName.SHA384,
                 _ => HashAlgorithmName.SHA256
             };
@@ -30,7 +30,7 @@ namespace Crossdyne.Security.Configuration
                 Group = group,
                 HashAlgorithm = hashAlgo,
                 SaltSize = 32,
-                Options = new SrpOptions 
+                Options = new SrpOptions
                 {
                     Group = group,
                     HashAlgorithmName = hashAlgo,
@@ -38,10 +38,5 @@ namespace Crossdyne.Security.Configuration
                 }
             };
         }
-
-        /// <summary>
-        /// Default profile: 3072-bit group, SHA-256, 32-byte salt (~128-bit security).
-        /// </summary>
-        public static SrpProfile Default => GetProfile(SrpGroup.Rfc5054_3072);
     }
 }

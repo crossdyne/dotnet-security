@@ -19,9 +19,9 @@ namespace Crossdyne.Security.Configuration
             {
                 CryptoVersion.V1 => new CryptoProfile
                 {
-                  Version = CryptoVersion.V1,
-                  KdfOptions = KdfOptions.Default,
-                  AesGcmOptions = AesGcmOptions.Default  
+                    Version = CryptoVersion.V1,
+                    KdfOptions = KdfOptions.V1,
+                    AesGcmOptions = AesGcmOptions.V1
                 },
                 _ => throw new SecurityException($"Unsupported crypto version: {version}")
             };
